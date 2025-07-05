@@ -1,3 +1,5 @@
+#grading/model.py
+
 from django.db import models
 
 class HocKy(models.Model):
@@ -13,4 +15,13 @@ class DiemSo(models.Model):
     Diem15 = models.FloatField(null=True, blank=True)
     Diem1Tiet = models.FloatField(null=True, blank=True)
     DiemTB = models.FloatField(null=True, blank=True)
-    class Meta: db_table = 'DIEMSO'
+
+    def save(self, *args, **kwargs):
+        if self.Diem15 is not None and self.Diem1Tiet is not None:
+            self.DiemTB = round((2 * self.Diem1Tiet + self.Diem15) / 3, 2)
+        else:
+            self.DiemTB = None
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = 'DIEMSO'
