@@ -1,17 +1,23 @@
+# accounts/permissions.py
+
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-from .models import TaiKhoan
+from .models import TaiKhoan # Import TaiKhoan của bạn
 
 class IsBGH(BasePermission):
-    """
-    Custom permission để chỉ cho phép người dùng có vai trò BGH.
-    """
     message = "Chỉ người có vai trò BGH mới có quyền thực hiện thao tác này."
-
     def has_permission(self, request, view):
         try:
-            # request.user là đối tượng User đã được xác thực
             return request.user.taikhoan.MaVaiTro.MaVaiTro == 'BGH'
         except TaiKhoan.DoesNotExist:
-            # Nếu không tìm thấy TaiKhoan, từ chối quyền
             return False
+
+# THÊM PERMISSION CLASS MỚI NÀY
+class IsGiaoVu(BasePermission):
+    message = "Chỉ người có vai trò Giáo Vụ mới có quyền thực hiện thao tác này."
+    def has_permission(self, request, view):
+        try:
+            return request.user.taikhoan.MaVaiTro.MaVaiTro == 'GiaoVu'
+        except TaiKhoan.DoesNotExist:
+            return False
+

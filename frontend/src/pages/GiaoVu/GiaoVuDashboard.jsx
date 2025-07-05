@@ -19,7 +19,7 @@ const GiaoVuDashboard = () => {
       description: "Thêm, sửa, xóa thông tin học sinh trong hệ thống.", 
       icon: <FaUsers />, 
       color: "primary", 
-      path: "/giaovu/quan-ly-hoc-sinh" 
+      path: "/giaovu/hocsinh" 
     },
     { 
       title: "Quản lý lớp học", 

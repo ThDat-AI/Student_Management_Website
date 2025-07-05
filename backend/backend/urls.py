@@ -7,9 +7,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
 
-    # Điều hướng đến các app tương ứng
     path("api/auth/", include("authentication.urls")),
     path("api/accounts/", include("accounts.urls")),
-
     path("api/configurations/", include("configurations.urls")),
+    path("api/students/", include("students.urls")),
+    path("api/classes/", include("classes.urls")),   # <-- Đảm bảo file này đã tồn tại
+    path("api/subjects/", include("subjects.urls")), # <-- Đảm bảo file này đã tồn tại
 ]

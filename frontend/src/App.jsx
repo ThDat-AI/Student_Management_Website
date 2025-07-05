@@ -22,6 +22,8 @@ import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
+import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
+
 function App() {
   return (
     <Router>
@@ -48,6 +50,7 @@ function App() {
 
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
+                  <Route path="/giaovu/hocsinh" element={<StudentManagement />} />
                 </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>

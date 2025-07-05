@@ -4,9 +4,9 @@ from rest_framework import generics, views, status, filters
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from accounts.permissions import IsBGH
+from accounts.permissions import IsBGH, IsGiaoVu
 from .models import NienKhoa, ThamSo
-from .serializers import ThamSoSerializer, CreateQuyDinhVaNienKhoaSerializer
+from .serializers import ThamSoSerializer, CreateQuyDinhVaNienKhoaSerializer, NienKhoaSerializer
 from students.models import HocSinh
 from classes.models import LopHoc
 
@@ -48,10 +48,24 @@ class QuyDinhDetailView(generics.RetrieveUpdateDestroyAPIView):
         nien_khoa.delete()
 
 class LatestQuyDinhView(views.APIView):
-    permission_classes = [IsAuthenticated, IsBGH]
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu]
     def get(self, request, *args, **kwargs):
         latest_thamso = ThamSo.objects.order_by('-IDNienKhoa__TenNienKhoa').first()
         if not latest_thamso:
             return Response({}, status=status.HTTP_200_OK)
         serializer = ThamSoSerializer(latest_thamso)
         return Response(serializer.data)
+    
+
+class ListNienKhoaView(generics.ListAPIView):
+    queryset = NienKhoa.objects.all()
+    serializer_class = NienKhoaSerializer
+    permission_classes = [IsAuthenticated, IsBGH] # Chỉ BGH mới được xem danh sách này cho mục đích quản lý
+
+from classes.models import Khoi # Import Khoi model
+from classes.serializers import KhoiSerializer # Import KhoiSerializer
+
+class ListKhoiView(generics.ListAPIView):
+    queryset = Khoi.objects.all()
+    serializer_class = KhoiSerializer
+    permission_classes = [IsAuthenticated, IsBGH] # Chỉ BGH mới được xem danh sách này
