@@ -2,34 +2,41 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Context providers
 import { AuthProvider } from "./contexts/AuthContext";
 import { LayoutProvider } from "./contexts/LayoutContext";
 
+// Layouts & routing components
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuestRoute from "./components/GuestRoute";
 import HomeRedirect from "./components/HomeRedirect";
 
+// Common pages
 import Login from "./pages/Common/Login";
 import NotFound from "./pages/Common/NotFound";
 import Unauthorized from "./pages/Common/Unauthorized";
+import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
+import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
+// BGH pages
 import BGHDashboard from "./pages/BGH/BGHDashboard";
 import AccountManagement from "./pages/BGH/AccountManagement/AccountManagement";
 import QuyDinhManagement from "./pages/BGH/QuyDinhManagement";
-import BaoCaoThongKe from "./pages/BGH/BaoCaoThongKe";
-import BaoCaoTongKetHocKy from "./pages/BGH/BaoCaoTongKetHocKy";
-import BaoCaoTongKetMonBGH from "./pages/BGH/BaoCaoTongKetMon"; // ✅ Đổi tên
+import BaoCaoThongKeBGH from "./pages/BGH/BaoCaoThongKe";
+import BaoCaoTongKetHocKyBGH from "./pages/BGH/BaoCaoTongKetHocKy";
+import BaoCaoTongKetMonBGH from "./pages/BGH/BaoCaoTongKetMon";
 
+// Giao Vu pages
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
-import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon"; // ✅ Đổi tên
+import BaoCaoThongKeGV from "./pages/GiaoVu/BaoCaoThongKe";
+import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon";
+import BaoCaoTongKetHocKyGV from "./pages/GiaoVu/BaoCaoTongKetHocKy";
 
+// Giao Vien pages
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
 import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
-
-import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
-import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
 function App() {
   return (
@@ -37,38 +44,42 @@ function App() {
       <AuthProvider>
         <LayoutProvider>
           <Routes>
-            {/* Guest routes */}
+
+            {/* -------- Guest Routes (khách chưa đăng nhập) -------- */}
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/password-reset" element={<PasswordResetRequest />} />
               <Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
             </Route>
 
+            {/* -------- Trang bị từ chối truy cập -------- */}
             <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Protected routes */}
+            {/* -------- Protected Routes (người dùng đã đăng nhập) -------- */}
             <Route path="/" element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route index element={<HomeRedirect />} />
 
-                {/* BGH routes */}
+                {/* -------------------- BGH Routes -------------------- */}
                 <Route element={<ProtectedRoute allowedRoles={["BGH"]} />}>
                   <Route path="bgh" element={<BGHDashboard />} />
                   <Route path="bgh/taikhoan" element={<AccountManagement />} />
                   <Route path="bgh/quydinh" element={<QuyDinhManagement />} />
-                  <Route path="bgh/baocao" element={<BaoCaoThongKe />} />
-                  <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKy />} />
+                  <Route path="bgh/baocao" element={<BaoCaoThongKeBGH />} />
+                  <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKyBGH />} />
                   <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMonBGH />} />
                 </Route>
 
-                {/* Giao Vu routes */}
+                {/* -------------------- Giao Vu Routes -------------------- */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
                   <Route path="giaovu/hocsinh" element={<StudentManagement />} />
+                  <Route path="giaovu/baocao" element={<BaoCaoThongKeGV />} />
+                  <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
                   <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
                 </Route>
 
-                {/* Giao Vien routes */}
+                {/* -------------------- Giao Vien Routes -------------------- */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
                   <Route path="teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
@@ -76,7 +87,9 @@ function App() {
               </Route>
             </Route>
 
+            {/* -------- 404 Not Found -------- */}
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </LayoutProvider>
       </AuthProvider>
