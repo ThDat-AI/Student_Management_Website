@@ -1,3 +1,4 @@
+# reporting/models.py
 from django.db import models
 
 class BaoCaoMonHoc(models.Model):

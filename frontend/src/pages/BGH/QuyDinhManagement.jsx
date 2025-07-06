@@ -1,3 +1,4 @@
+// pages/BGH/QuyDinhManagement.jsx
 import { useState, useEffect, useCallback } from "react"
 import { useLayout } from "../../contexts/LayoutContext"
 import { Container, Row, Col, Button, Alert, Card, Spinner, Form, Modal, Badge, InputGroup } from "react-bootstrap"

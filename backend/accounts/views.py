@@ -1,3 +1,4 @@
+# accounts/views.py
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView

@@ -1,3 +1,4 @@
+// App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -32,6 +33,12 @@ import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
 import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
+import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
+import BaoCaoTongKetMon from "./pages/GiaoVu/BaoCaoTongKetMon";
+import BaoCaoTongKetHocKy from "./pages/BGH/BaoCaoTongKetHocKy";
+import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
+import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
+
 
 function App() {
   return (
@@ -68,7 +75,8 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
                   <Route path="giaovu/hocsinh" element={<StudentManagement />} />
-                  <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
+                  <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMon />} />
+                  <Route path="giaovu/quan-ly-lop-hoc" element={<QuanLyLopHoc />} />
                 </Route>
 
                 {/* Giao Vien routes */}

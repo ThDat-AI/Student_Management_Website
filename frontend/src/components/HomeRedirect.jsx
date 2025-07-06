@@ -1,3 +1,4 @@
+// src/components/HomeRedirect.jsx
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
