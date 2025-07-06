@@ -21,3 +21,6 @@ class IsGiaoVu(BasePermission):
         except TaiKhoan.DoesNotExist:
             return False
 
+class IsGiaoVien(BasePermission):
+    def has_permission(self, request, view):
+        return hasattr(request.user, 'taikhoan') and request.user.taikhoan.MaVaiTro.MaVaiTro == 'GiaoVien'

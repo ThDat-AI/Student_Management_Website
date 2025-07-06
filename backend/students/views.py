@@ -3,7 +3,7 @@
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from accounts.permissions import IsBGH, IsGiaoVu # BGH cũng có quyền
+from accounts.permissions import IsBGH, IsGiaoVu, IsGiaoVien # BGH cũng có quyền
 # THAY ĐỔI: Nếu bạn có permission IsGiaoVu, hãy import nó
 # from accounts.permissions import IsGiaoVu
 from .models import HocSinh
@@ -56,7 +56,7 @@ class HocSinhDetailView(generics.RetrieveUpdateDestroyAPIView):
 class NienKhoaFilterListView(generics.ListAPIView):
     queryset = NienKhoa.objects.all().order_by('-TenNienKhoa') # Sắp xếp niên khóa mới nhất lên đầu
     serializer_class = NienKhoaSerializer
-    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu] # Hoặc IsGiaoVu
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu | IsGiaoVien] # Hoặc IsGiaoVu
 
 class KhoiFilterListView(generics.ListAPIView):
     queryset = Khoi.objects.all().order_by('TenKhoi') # Sắp xếp khối theo tên

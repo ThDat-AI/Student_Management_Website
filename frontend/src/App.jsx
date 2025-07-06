@@ -18,11 +18,13 @@ import AccountManagement from "./pages/BGH/AccountManagement/AccountManagement";
 import QuyDinhManagement from "./pages/BGH/QuyDinhManagement";
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
+import QuanLyDiem from "./pages/GiaoVien/NhapDiemHocSinh";
 
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
+import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
 
 function App() {
   return (
@@ -55,6 +57,7 @@ function App() {
 
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
+                  <Route path="/teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
                 </Route>
               </Route>
             </Route>

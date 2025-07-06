@@ -51,7 +51,7 @@ class HocSinh(models.Model):
         # Kiểm tra ràng buộc tuổi
         if not (thamso.TuoiToiThieu <= calculated_age <= thamso.TuoiToiDa):
             raise ValidationError(
-                f"Tuổi của học sinh ({calculated_age} tuổi) tại thời điểm tiếp nhận ({september_first_of_nien_kho.strftime('%d/%m/%Y')}) "
+                f"Tuổi của học sinh ({calculated_age} tuổi) tại thời điểm tiếp nhận ({september_first_of_nien_khoa.strftime('%d/%m/%Y')}) "
                 f"không nằm trong khoảng quy định ({thamso.TuoiToiThieu}-{thamso.TuoiToiDa} tuổi) cho niên khóa này."
             )
         
