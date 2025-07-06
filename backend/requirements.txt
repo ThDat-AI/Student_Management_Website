@@ -9,3 +9,5 @@ sqlparse
 mssql-django
 pyodbc
 python-dotenv
+openpyxl
+reportlab

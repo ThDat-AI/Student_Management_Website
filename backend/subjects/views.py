@@ -15,9 +15,9 @@ class ToHopListView(generics.ListAPIView):
 class MonHocListCreateView(generics.ListCreateAPIView):
     queryset = MonHoc.objects.all()
     serializer_class = MonHocSerializer
-    permission_classes = [IsAuthenticated, IsAuthenticated] # Placeholder, cần chỉnh sửa
+    permission_classes = [IsAuthenticated] # Placeholder, cần chỉnh sửa
 
 class MonHocDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = MonHoc.objects.all()
     serializer_class = MonHocSerializer
-    permission_classes = [IsAuthenticated, IsAuthenticated] # Placeholder, cần chỉnh sửa
+    permission_classes = [IsAuthenticated] # Placeholder, cần chỉnh sửa

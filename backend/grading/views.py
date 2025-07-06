@@ -4,10 +4,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 
+from django.http import HttpResponse
+import openpyxl
+from reportlab.pdfgen import canvas
+
 from grading.models import DiemSo, HocKy
 from grading.serializers import DiemSoSerializer, HocKySerializer, HocSinhDiemSerializer
 from students.models import HocSinh
-from classes.models import LopHoc_HocSinh
+from classes.models import LopHoc_HocSinh, LopHoc_MonHoc
+from configurations.models import ThamSo
 
 
 # API lấy danh sách học sinh trong lớp kèm điểm (nếu có)
@@ -23,11 +28,12 @@ class DiemSoListView(APIView):
         if not all([IDNienKhoa, IDLopHoc, IDMonHoc, IDHocKy]):
             return Response({"detail": "Thiếu tham số"}, status=400)
 
-        # Lấy danh sách học sinh thuộc lớp học
+        if not LopHoc_MonHoc.objects.filter(IDLopHoc_id=IDLopHoc, IDMonHoc_id=IDMonHoc).exists():
+            return Response({"detail": "Môn học không thuộc lớp học này"}, status=400)
+
         hoc_sinh_ids = LopHoc_HocSinh.objects.filter(IDLopHoc_id=IDLopHoc).values_list("IDHocSinh_id", flat=True)
         hoc_sinh_list = HocSinh.objects.filter(id__in=hoc_sinh_ids, IDNienKhoaTiepNhan=IDNienKhoa)
 
-        # Truyền context để serializer có thể lấy điểm tương ứng từng học sinh
         serializer = HocSinhDiemSerializer(
             hoc_sinh_list,
             many=True,
@@ -53,7 +59,9 @@ def cap_nhat_diem(request):
     diem15 = data.get('Diem15')
     diem1tiet = data.get('Diem1Tiet')
 
-    # Tạo hoặc lấy bản ghi điểm số
+    if not LopHoc_MonHoc.objects.filter(IDLopHoc_id=data['IDLopHoc'], IDMonHoc_id=data['IDMonHoc']).exists():
+        return Response({"detail": "Môn học không thuộc lớp học này"}, status=400)
+
     obj, _ = DiemSo.objects.get_or_create(
         IDHocSinh_id=data['IDHocSinh'],
         IDLopHoc_id=data['IDLopHoc'],
@@ -64,7 +72,6 @@ def cap_nhat_diem(request):
     obj.Diem15 = diem15
     obj.Diem1Tiet = diem1tiet
 
-    # Tính điểm TB
     if diem15 is not None and diem1tiet is not None:
         try:
             obj.DiemTB = round((float(diem15) + 2 * float(diem1tiet)) / 3, 2)
@@ -74,7 +81,6 @@ def cap_nhat_diem(request):
         obj.DiemTB = None
 
     obj.save()
-
     return Response(DiemSoSerializer(obj).data, status=status.HTTP_200_OK)
 
 
@@ -83,3 +89,101 @@ class ListHocKyView(generics.ListAPIView):
     queryset = HocKy.objects.all()
     serializer_class = HocKySerializer
     permission_classes = [IsAuthenticated]
+
+
+# API xuất Excel bảng điểm
+class XuatExcelDiemSoAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        IDNienKhoa = request.query_params.get("IDNienKhoa")
+        IDLopHoc = request.query_params.get("IDLopHoc")
+        IDMonHoc = request.query_params.get("IDMonHoc")
+        IDHocKy = request.query_params.get("IDHocKy")
+
+        qs = DiemSo.objects.filter(
+            IDLopHoc=IDLopHoc,
+            IDMonHoc=IDMonHoc,
+            IDHocKy=IDHocKy,
+            IDHocSinh__IDNienKhoaTiepNhan=IDNienKhoa
+        ).select_related("IDHocSinh")
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Bảng điểm"
+        ws.append(["Họ tên", "Điểm 15 phút", "Điểm 1 tiết", "Điểm TB", "Kết quả"])
+
+        diem_dat_mon = ThamSo.objects.last().DiemDatMon if ThamSo.objects.exists() else 5.0
+
+        for d in qs:
+            tb = (
+                (d.Diem15 + 2 * d.Diem1Tiet) / 3
+                if d.Diem15 is not None and d.Diem1Tiet is not None
+                else None
+            )
+            ket_qua = "Đạt" if tb is not None and tb >= diem_dat_mon else "Không đạt"
+            ho_ten = getattr(d.IDHocSinh, 'ho_ten', 'Không rõ')
+
+            ws.append([
+                ho_ten,
+                d.Diem15 or "",
+                d.Diem1Tiet or "",
+                f"{tb:.2f}" if tb is not None else "",
+                ket_qua
+            ])
+
+        response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response["Content-Disposition"] = "attachment; filename=bang_diem.xlsx"
+        wb.save(response)
+        return response
+
+
+# API xuất PDF bảng điểm
+class XuatPDFDiemSoAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        IDNienKhoa = request.query_params.get("IDNienKhoa")
+        IDLopHoc = request.query_params.get("IDLopHoc")
+        IDMonHoc = request.query_params.get("IDMonHoc")
+        IDHocKy = request.query_params.get("IDHocKy")
+
+        qs = DiemSo.objects.filter(
+            IDLopHoc=IDLopHoc,
+            IDMonHoc=IDMonHoc,
+            IDHocKy=IDHocKy,
+            IDHocSinh__IDNienKhoaTiepNhan=IDNienKhoa
+        ).select_related("IDHocSinh")
+
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = "attachment; filename=bang_diem.pdf"
+
+        p = canvas.Canvas(response)
+        p.setFont("Helvetica", 12)
+        y = 800
+        p.drawString(50, y, "Bảng điểm học sinh")
+        y -= 30
+        p.drawString(50, y, "Họ tên - Điểm 15p - Điểm 1 tiết - Điểm TB - Kết quả")
+        y -= 20
+
+        diem_dat_mon = ThamSo.objects.last().DiemDatMon if ThamSo.objects.exists() else 5.0
+
+        for d in qs:
+            tb = (
+                (d.Diem15 + 2 * d.Diem1Tiet) / 3
+                if d.Diem15 is not None and d.Diem1Tiet is not None
+                else None
+            )
+            ket_qua = "Đạt" if tb is not None and tb >= diem_dat_mon else "Không đạt"
+            ho_ten = getattr(d.IDHocSinh, 'ho_ten', 'Không rõ')
+            row = f"{ho_ten} - {d.Diem15 or ''} - {d.Diem1Tiet or ''} - {f'{tb:.2f}' if tb else ''} - {ket_qua}"
+
+            p.drawString(50, y, row)
+            y -= 20
+            if y < 50:
+                p.showPage()
+                y = 800
+
+        p.showPage()
+        p.save()
+        return response

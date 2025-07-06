@@ -1,3 +1,5 @@
+//GiaoVuDashboard.jsx
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
@@ -40,7 +42,8 @@ const GiaoVuDashboard = () => {
       description: "Tạo báo cáo về học sinh, lớp học và hiệu quả giảng dạy.", 
       icon: <FaChartBar />, 
       color: "info", 
-      path: "/giaovu/bao-cao-thong-ke" 
+      path: "/giaovu/baocao-monhoc"
+
     },
   ];
 

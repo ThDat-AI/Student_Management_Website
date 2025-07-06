@@ -5,6 +5,7 @@ from .models import MonHoc, ToHop
 class MonHocAdmin(admin.ModelAdmin):
     search_fields = ['TenMonHoc']
     list_display = ['TenMonHoc', 'IDNienKhoa']
+    list_filter = ['IDNienKhoa']
 
 @admin.register(ToHop)
 class ToHopAdmin(admin.ModelAdmin):

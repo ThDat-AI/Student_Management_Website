@@ -13,4 +13,4 @@ class MonHocSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MonHoc
-        fields = '__all__'
+        fields = ['id', 'TenMonHoc', 'IDNienKhoa', 'TenNienKhoa', 'IDToHop', 'TenToHop']

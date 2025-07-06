@@ -18,12 +18,13 @@ import AccountManagement from "./pages/BGH/AccountManagement/AccountManagement";
 import QuyDinhManagement from "./pages/BGH/QuyDinhManagement";
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
-import QuanLyDiem from "./pages/GiaoVien/NhapDiemHocSinh";
 
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
+import BaoCaoTongKetMon from "./pages/GiaoVu/BaoCaoTongKetMon";
+import BaoCaoTongKetHocKy from "./pages/BGH/BaoCaoTongKetHocKy";
 import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
 
 function App() {
@@ -37,31 +38,36 @@ function App() {
               <Route path="/password-reset" element={<PasswordResetRequest />} />
               <Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
             </Route>
-            
+
             <Route path="/unauthorized" element={<Unauthorized />} />
 
             <Route path="/" element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route index element={<HomeRedirect />} />
-                
+
+                {/* BGH Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["BGH"]} />}>
                   <Route path="bgh" element={<BGHDashboard />} />
                   <Route path="bgh/taikhoan" element={<AccountManagement />} />
-                  <Route path="/bgh/quydinh" element={<QuyDinhManagement />} />
+                  <Route path="bgh/quydinh" element={<QuyDinhManagement />} />
+                  <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKy />} />
                 </Route>
 
+                {/* Giao Vu Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
-                  <Route path="/giaovu/hocsinh" element={<StudentManagement />} />
+                  <Route path="giaovu/hocsinh" element={<StudentManagement />} />
+                  <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMon />} />
                 </Route>
 
+                {/* Giao Vien Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
-                  <Route path="/teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
+                  <Route path="teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
                 </Route>
               </Route>
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </LayoutProvider>

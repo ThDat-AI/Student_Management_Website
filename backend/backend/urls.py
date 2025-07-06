@@ -14,5 +14,7 @@ urlpatterns = [
     path("api/classes/", include("classes.urls")),   
     path("api/subjects/", include("subjects.urls")), # <-- Đảm bảo file này đã tồn tại
     path("api/grading/", include("grading.urls")),
+    path("api/reporting/", include("reporting.urls")),
+
     
 ]
