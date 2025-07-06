@@ -6,6 +6,7 @@ import { Container, Row, Col, Button, Alert, Form, Card, Spinner, InputGroup, Dr
 import { FaPlus, FaSearch, FaUserGraduate, FaFilter } from 'react-icons/fa';
 import api from '../../../api/index';
 
+import confirmDelete from '../../../components/ConfirmDelete';
 // Import các component con
 import StudentModal from './components/StudentModal';
 import StudentTable from './components/StudentTable';
@@ -95,7 +96,9 @@ const StudentManagement = () => {
     };
 
     const handleDelete = async (student) => {
-        if (window.confirm(`Bạn có chắc muốn xóa học sinh "${student.Ho} ${student.Ten}"?`)) {
+        const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa học sinh "${student.Ho} ${student.Ten}"?`);
+        if (!isConfirmed) return;
+        {
             try {
                 await api.delete(`/api/students/hocsinh/${student.id}/`);
                 setSuccess('Xóa học sinh thành công!');

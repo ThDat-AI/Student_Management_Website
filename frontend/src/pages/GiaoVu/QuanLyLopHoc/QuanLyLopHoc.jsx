@@ -8,7 +8,7 @@ import api from '../../../api';
 import LopHocTable from './components/LopHocTable';
 import LopHocModal from './components/LopHocModal';
 import MonHocModal from './components/MonHocModal';
-
+import confirmDelete from '../../../components/ConfirmDelete';
 
 const QuanLyLopHoc = () => {
     const { setPageTitle } = useLayout();
@@ -117,7 +117,9 @@ const QuanLyLopHoc = () => {
     };
 
     const handleDelete = async (lop) => {
-        if (window.confirm(`Bạn có chắc muốn xóa lớp học "${lop.TenLop}"?`)) {
+        const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa lớp học "${lop.TenLop}"?`);
+        if (!isConfirmed) return;
+        {
             try {
                 await api.delete(`/api/classes/lophoc/${lop.id}/`);
                 setSuccess('Xóa lớp học thành công.');
