@@ -36,6 +36,7 @@ import BaoCaoThongKeGV from "./pages/GiaoVu/BaoCaoThongKe";
 import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon";
 import BaoCaoTongKetHocKyGV from "./pages/GiaoVu/BaoCaoTongKetHocKy";
 import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
+import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop"
 
 // Giao Vien pages
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
@@ -82,6 +83,7 @@ function App() {
                   <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
                   <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
                   <Route path="giaovu/quan-ly-lop-hoc" element={<QuanLyLopHoc />} />
+                  <Route path="giaovu/lap-danh-sach-lop" element={<LapDanhSachLop />} />
                 </Route>
 
                 {/* Giao Vien Routes */}

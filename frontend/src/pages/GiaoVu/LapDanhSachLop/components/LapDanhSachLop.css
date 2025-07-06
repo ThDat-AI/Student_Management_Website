@@ -1,0 +1,8 @@
+.dual-listbox {
+    height: 400px; /* Hoặc chiều cao bạn muốn */
+    overflow-y: auto;
+}
+
+.dual-listbox .list-group-item {
+    cursor: pointer;
+}

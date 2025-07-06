@@ -1,15 +1,21 @@
+# classes/views.py
 from rest_framework import generics, views, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
 
 from accounts.permissions import IsBGH, IsGiaoVu
-from .models import Khoi, LopHoc, LopHoc_MonHoc
+from .models import Khoi, LopHoc, LopHoc_MonHoc, LopHoc_HocSinh
 from .serializers import KhoiSerializer, LopHocSerializer, LopHocMonHocUpdateSerializer
+from students.serializers import HocSinhSerializer
+from students.models import HocSinh
 from subjects.models import MonHoc
 from subjects.serializers import MonHocSerializer
+
+from configurations.models import ThamSo
 
 # Danh sách khối học (dropdown)
 class KhoiListView(generics.ListAPIView):
@@ -58,7 +64,7 @@ class LopHocMonHocUpdateView(views.APIView):
         try:
             return LopHoc.objects.get(pk=pk)
         except LopHoc.DoesNotExist:
-            return None
+            return None # Sẽ được xử lý bên dưới
 
     def post(self, request, pk):
         lop_hoc = self.get_lop_hoc(pk)
@@ -66,21 +72,46 @@ class LopHocMonHocUpdateView(views.APIView):
             return Response({"detail": "Lớp học không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = LopHocMonHocUpdateSerializer(data=request.data)
-        if serializer.is_valid():
-            monhoc_ids = serializer.validated_data['monhoc_ids']
-            nien_khoa_lop_hoc = lop_hoc.IDNienKhoa
-            mon_hoc_qs = MonHoc.objects.filter(pk__in=monhoc_ids)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        monhoc_ids = serializer.validated_data['monhoc_ids']
+        nien_khoa_lop_hoc = lop_hoc.IDNienKhoa
 
-            for mon_hoc in mon_hoc_qs:
-                if mon_hoc.IDNienKhoa != nien_khoa_lop_hoc:
-                    return Response({
-                        "detail": f"Môn học '{mon_hoc.TenMonHoc}' không thuộc niên khóa '{nien_khoa_lop_hoc.TenNienKhoa}'."},
-                        status=status.HTTP_400_BAD_REQUEST)
+        # =================================================================
+        # === LOGIC MỚI: KIỂM TRA SỐ LƯỢNG MÔN HỌC TỐI ĐA ===
+        # =================================================================
+        try:
+            tham_so = ThamSo.objects.get(IDNienKhoa=nien_khoa_lop_hoc)
+            so_mon_hoc_toi_da = tham_so.SoMonHocToiDa
+            
+            if len(monhoc_ids) > so_mon_hoc_toi_da:
+                return Response(
+                    {"detail": f"Số lượng môn học đã chọn ({len(monhoc_ids)}) vượt quá giới hạn cho phép ({so_mon_hoc_toi_da}) của niên khóa."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except ThamSo.DoesNotExist:
+            return Response(
+                {"detail": f"Chưa có quy định về số lượng môn học cho niên khóa {nien_khoa_lop_hoc.TenNienKhoa}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # =================================================================
 
-            lop_hoc.MonHoc.set(mon_hoc_qs)
-            return Response({"message": "Cập nhật môn học cho lớp thành công."}, status=status.HTTP_200_OK)
+        # --- LOGIC CŨ: KIỂM TRA MÔN HỌC CÓ THUỘC ĐÚNG NIÊN KHÓA KHÔNG ---
+        # Vẫn giữ lại logic này để đảm bảo tính hợp lệ của từng môn
+        mon_hoc_qs = MonHoc.objects.filter(pk__in=monhoc_ids)
+        
+        # Kiểm tra nhanh hơn: lấy tất cả niên khóa của các môn được chọn
+        nien_khoa_ids_of_selected_subjects = set(mon_hoc_qs.values_list('IDNienKhoa_id', flat=True))
+        if len(nien_khoa_ids_of_selected_subjects) > 1 or (len(nien_khoa_ids_of_selected_subjects) == 1 and nien_khoa_lop_hoc.id not in nien_khoa_ids_of_selected_subjects):
+             return Response({
+                "detail": f"Một hoặc nhiều môn học không thuộc niên khóa '{nien_khoa_lop_hoc.TenNienKhoa}'."},
+                status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Nếu tất cả các kiểm tra đều qua, gán môn học cho lớp
+        lop_hoc.MonHoc.set(mon_hoc_qs)
+        
+        return Response({"message": "Cập nhật môn học cho lớp thành công."}, status=status.HTTP_200_OK)
 
 # Danh sách môn học theo lớp (cho giáo viên nhập điểm)
 class MonHocTheoLopView(APIView):
@@ -94,3 +125,91 @@ class MonHocTheoLopView(APIView):
         mon_hoc_qs = LopHoc_MonHoc.objects.filter(IDLopHoc_id=lop_hoc_id).select_related('IDMonHoc')
         mon_hoc_list = [mh.IDMonHoc for mh in mon_hoc_qs]
         return Response(MonHocSerializer(mon_hoc_list, many=True).data)
+
+
+class LopHocHocSinhManagementView(APIView):
+    """
+    GET: Lấy danh sách học sinh trong lớp và danh sách học sinh có thể được thêm vào lớp.
+    POST: Cập nhật danh sách học sinh cho lớp.
+    """
+    permission_classes = [IsAuthenticated, IsGiaoVu | IsBGH]
+
+    def get_lop_hoc(self, pk):
+        try:
+            return LopHoc.objects.select_related('IDNienKhoa', 'IDKhoi').get(pk=pk)
+        except LopHoc.DoesNotExist:
+            raise NotFound(detail="Lớp học không tồn tại.")
+
+    def get(self, request, pk, format=None):
+        lop_hoc = self.get_lop_hoc(pk)
+        nien_khoa = lop_hoc.IDNienKhoa
+        khoi = lop_hoc.IDKhoi
+
+        # Lấy sĩ số tối đa từ quy định
+        try:
+            tham_so = ThamSo.objects.get(IDNienKhoa=nien_khoa)
+            siso_toida = tham_so.SiSoToiDa
+        except ThamSo.DoesNotExist:
+            return Response(
+                {"detail": f"Chưa có quy định về sĩ số cho niên khóa {nien_khoa.TenNienKhoa}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 1. Lấy danh sách học sinh đã có trong lớp
+        students_in_class = lop_hoc.HocSinh.all().order_by('Ten', 'Ho')
+
+        # 2. Lấy danh sách học sinh có thể thêm vào lớp
+        # Điều kiện:
+        # - Cùng niên khóa tiếp nhận.
+        # - Cùng khối dự kiến.
+        # - Chưa được xếp vào bất kỳ lớp nào trong niên khóa này.
+
+        # Lấy ID của tất cả học sinh đã được phân lớp trong niên khóa này
+        assigned_student_ids = LopHoc_HocSinh.objects.filter(
+            IDLopHoc__IDNienKhoa=nien_khoa
+        ).values_list('IDHocSinh_id', flat=True)
+
+        students_available = HocSinh.objects.filter(
+            IDNienKhoaTiepNhan=nien_khoa,
+            KhoiDuKien=khoi
+        ).exclude(
+            id__in=list(assigned_student_ids)
+        ).order_by('Ten', 'Ho')
+
+        # Serialize dữ liệu
+        students_in_class_serializer = HocSinhSerializer(students_in_class, many=True)
+        students_available_serializer = HocSinhSerializer(students_available, many=True)
+
+        return Response({
+            'lop_hoc_info': LopHocSerializer(lop_hoc).data,
+            'students_in_class': students_in_class_serializer.data,
+            'students_available': students_available_serializer.data,
+            'siso_toida': siso_toida,
+        })
+
+    def post(self, request, pk, format=None):
+        lop_hoc = self.get_lop_hoc(pk)
+        student_ids = request.data.get('student_ids', [])
+
+        if not isinstance(student_ids, list):
+            return Response({"detail": "Dữ liệu student_ids phải là một danh sách."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Kiểm tra sĩ số tối đa
+        try:
+            siso_toida = ThamSo.objects.get(IDNienKhoa=lop_hoc.IDNienKhoa).SiSoToiDa
+            if len(student_ids) > siso_toida:
+                return Response(
+                    {"detail": f"Số lượng học sinh ({len(student_ids)}) vượt quá sĩ số tối đa cho phép ({siso_toida})."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except ThamSo.DoesNotExist:
+             return Response(
+                {"detail": f"Chưa có quy định về sĩ số cho niên khóa {lop_hoc.IDNienKhoa.TenNienKhoa}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Dùng `set` để cập nhật, DRF sẽ tự động xử lý thêm/xóa
+        # Signal `m2m_changed` sẽ được kích hoạt để cập nhật sĩ số
+        lop_hoc.HocSinh.set(student_ids)
+
+        return Response({"message": f"Cập nhật danh sách học sinh cho lớp {lop_hoc.TenLop} thành công."}, status=status.HTTP_200_OK)

@@ -33,7 +33,7 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
                             <td>{new Date(student.NgaySinh).toLocaleDateString('vi-VN')}</td>
                             <td>{student.Email || 'N/A'}</td>
                             <td>{student.TenNienKhoaTiepNhan}</td>
-                            <td>{student.TenKhoiDuKien || 'Chưa xếp'}</td>
+                            <td>{student.TenKhoiDuKien}</td>
                             <td className="text-center">
                                 <Button variant="outline-primary" size="sm" className="me-2" onClick={() => onEdit('edit', student)} title="Chỉnh sửa">
                                     <FaEdit />

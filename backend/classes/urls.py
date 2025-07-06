@@ -1,3 +1,4 @@
+# classes/urls.py
 from django.urls import path
 from . import views
 from .views import (
@@ -7,6 +8,7 @@ from .views import (
     LopHocListView,
     MonHocTheoLopView,
     LopHocMonHocUpdateView,
+    LopHocHocSinhManagementView
 )
 
 urlpatterns = [
@@ -16,4 +18,6 @@ urlpatterns = [
     path('lophoc-list/', LopHocListView.as_view(), name='lop-hoc-list'),  # dùng cho dropdown
     path('monhoc-theo-lop/', MonHocTheoLopView.as_view(), name='monhoc-theo-lop'),
     path('lophoc/<int:pk>/monhoc/', LopHocMonHocUpdateView.as_view(), name='lophoc-monhoc-update'),
+    path('lophoc/<int:pk>/hocsinh/', LopHocHocSinhManagementView.as_view(), name='lophoc-hocsinh-management'),
+
 ]

@@ -192,7 +192,7 @@ const StudentModal = ({ show, onHide, modalType, studentData, onSubmit }) => {
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Khối dự kiến</Form.Label>
-                                <Form.Select name="KhoiDuKien" value={formData.KhoiDuKien || ''} onChange={handleInputChange}>
+                                <Form.Select name="KhoiDuKien" value={formData.KhoiDuKien || ''} onChange={handleInputChange} required>
                                     <option value="">Không chọn</option>
                                     {khois.map(khoi => (
                                         <option key={khoi.id} value={khoi.id}>{khoi.TenKhoi}</option>
