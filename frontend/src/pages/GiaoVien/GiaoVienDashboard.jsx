@@ -20,21 +20,21 @@ const GiaoVienDashboard = () => {
       description: "Tìm kiếm thông tin chi tiết của học sinh trong hệ thống.", 
       icon: <FaSearch />, 
       color: "primary", 
-      path: "/teacher/tra-cuu-hoc-sinh" 
+      path: "/giaovien/tra-cuu" 
     },
     { 
       title: "Xuất danh sách lớp", 
       description: "Tạo và xuất danh sách học sinh của các lớp chủ nhiệm.", 
       icon: <FaFileExport />, 
       color: "success", 
-      path: "/teacher/xuat-danh-sach-lop" 
+      path: "/giaovien/xuat-danh-sach-lop" 
     },
     { 
       title: "Quản lý điểm", 
       description: "Nhập, chỉnh sửa và xem điểm của học sinh.", 
       icon: <FaClipboardList />, 
       color: "warning", 
-      path: "/teacher/quan-ly-diem" 
+      path: "/giaovien/quan-ly-diem" 
     },
   ];
 

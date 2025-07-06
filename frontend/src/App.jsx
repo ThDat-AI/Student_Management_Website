@@ -41,6 +41,8 @@ import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop"
 // Giao Vien pages
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
 import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
+import TraCuuHocSinh from "./pages/GiaoVien/TraCuuHocSinh";
+import DanhSachLop from "./pages/GiaoVien/DanhSachLop";
 
 function App() {
   return (
@@ -89,7 +91,9 @@ function App() {
                 {/* Giao Vien Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
-                  <Route path="teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
+                  <Route path="giaovien/quan-ly-diem" element={<NhapDiemHocSinh />} />
+                  <Route path="giaovien/tra-cuu" element={<TraCuuHocSinh />} />
+                  <Route path="giaovien/xuat-danh-sach-lop" element={<DanhSachLop />} />
                 </Route>
               </Route>
             </Route>
