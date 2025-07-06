@@ -67,7 +67,9 @@ INSTALLED_APPS = [
     "classes",
     'subjects',
     "grading",
-    "reporting"
+    "reporting",
+
+
 ]
 
 MIDDLEWARE = [

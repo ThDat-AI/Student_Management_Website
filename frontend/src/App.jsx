@@ -1,3 +1,4 @@
+// App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -26,6 +27,7 @@ import QuyDinhManagement from "./pages/BGH/QuyDinhManagement";
 import BaoCaoThongKeBGH from "./pages/BGH/BaoCaoThongKe";
 import BaoCaoTongKetHocKyBGH from "./pages/BGH/BaoCaoTongKetHocKy";
 import BaoCaoTongKetMonBGH from "./pages/BGH/BaoCaoTongKetMon";
+import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
 
 // Giao Vu pages
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
@@ -33,6 +35,7 @@ import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagemen
 import BaoCaoThongKeGV from "./pages/GiaoVu/BaoCaoThongKe";
 import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon";
 import BaoCaoTongKetHocKyGV from "./pages/GiaoVu/BaoCaoTongKetHocKy";
+import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
 
 // Giao Vien pages
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
@@ -45,22 +48,22 @@ function App() {
         <LayoutProvider>
           <Routes>
 
-            {/* -------- Guest Routes (khách chưa đăng nhập) -------- */}
+            {/* Guest Routes (chưa đăng nhập) */}
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/password-reset" element={<PasswordResetRequest />} />
               <Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
             </Route>
 
-            {/* -------- Trang bị từ chối truy cập -------- */}
+            {/* Unauthorized page */}
             <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* -------- Protected Routes (người dùng đã đăng nhập) -------- */}
+            {/* Protected Routes (sau khi đăng nhập) */}
             <Route path="/" element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route index element={<HomeRedirect />} />
 
-                {/* -------------------- BGH Routes -------------------- */}
+                {/* BGH Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["BGH"]} />}>
                   <Route path="bgh" element={<BGHDashboard />} />
                   <Route path="bgh/taikhoan" element={<AccountManagement />} />
@@ -68,18 +71,20 @@ function App() {
                   <Route path="bgh/baocao" element={<BaoCaoThongKeBGH />} />
                   <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKyBGH />} />
                   <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMonBGH />} />
+                  <Route path="bgh/monhoc" element={<QuanLyMonHoc />} />
                 </Route>
 
-                {/* -------------------- Giao Vu Routes -------------------- */}
+                {/* Giao Vu Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
                   <Route path="giaovu/hocsinh" element={<StudentManagement />} />
                   <Route path="giaovu/baocao" element={<BaoCaoThongKeGV />} />
                   <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
                   <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
+                  <Route path="giaovu/quan-ly-lop-hoc" element={<QuanLyLopHoc />} />
                 </Route>
 
-                {/* -------------------- Giao Vien Routes -------------------- */}
+                {/* Giao Vien Routes */}
                 <Route element={<ProtectedRoute allowedRoles={["GiaoVien"]} />}>
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
                   <Route path="teacher/quan-ly-diem" element={<NhapDiemHocSinh />} />
@@ -87,7 +92,7 @@ function App() {
               </Route>
             </Route>
 
-            {/* -------- 404 Not Found -------- */}
+            {/* 404 Not Found */}
             <Route path="*" element={<NotFound />} />
 
           </Routes>

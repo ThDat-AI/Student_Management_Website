@@ -1,3 +1,4 @@
+// layouts/Mainlayout.jsx
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SharedNavbar from '../components/SharedNavbar';

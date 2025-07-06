@@ -1,3 +1,4 @@
+// src/pages/NotFound.jsx
 import React, { useEffect } from 'react';
 
 const NotFound = () => {

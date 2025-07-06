@@ -1,6 +1,7 @@
 # subjects/serializers.py
 from rest_framework import serializers
 from .models import ToHop, MonHoc
+from configurations.models import NienKhoa
 
 class ToHopSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,3 +15,8 @@ class MonHocSerializer(serializers.ModelSerializer):
     class Meta:
         model = MonHoc
         fields = ['id', 'TenMonHoc', 'IDNienKhoa', 'TenNienKhoa', 'IDToHop', 'TenToHop']
+
+class NienKhoaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NienKhoa
+        fields = ['id', 'TenNienKhoa']

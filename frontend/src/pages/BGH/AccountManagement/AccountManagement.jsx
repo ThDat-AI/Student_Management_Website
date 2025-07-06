@@ -9,6 +9,7 @@ import api from '../../../api';
 // Import các component con
 import AccountTable from './components/AccountTable';
 import AccountModal from './components/AccountModal';
+import confirmDelete from '../../../components/ConfirmDelete';
 
 const AccountManagement = () => {
     // === STATE ===
@@ -157,7 +158,9 @@ const AccountManagement = () => {
     };
 
     const handleDelete = async (account) => {
-        if (window.confirm(`Bạn có chắc muốn xóa tài khoản "${account.Ho} ${account.Ten}"?`)) {
+        const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa tài khoản "${account.Ho} ${account.Ten}"?`);
+        if (!isConfirmed) return;
+        {
             try {
                 await api.delete(`/api/accounts/management/${account.id}/delete/`);
                 setSuccess('Xóa tài khoản thành công.');

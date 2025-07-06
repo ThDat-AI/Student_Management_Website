@@ -1,3 +1,4 @@
+// pages/BGH/BaoCaoTongKetHocKy.jsx
 import React, { useEffect, useState } from "react";
 import {
   Container, Row, Col, Form, Button, Table, Spinner, Alert

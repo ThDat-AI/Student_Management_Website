@@ -1,9 +1,11 @@
+// pages/BGH/QuyDinhManagement.jsx
 import { useState, useEffect, useCallback } from "react"
 import { useLayout } from "../../contexts/LayoutContext"
 import { Container, Row, Col, Button, Alert, Card, Spinner, Form, Modal, Badge, InputGroup } from "react-bootstrap"
 import { FaPlus, FaEdit, FaTrashAlt, FaSearch, FaUsers, FaGraduationCap, FaClipboardList } from "react-icons/fa"
 import api from "../../api"
 
+import confirmDelete from "../../components/ConfirmDelete"
 // --- COMPONENT MODAL (Tạo/Sửa quy định) ---
 const QuyDinhModal = ({ show, onHide, mode, selectedQuyDinh, latestQuyDinh, onSubmit }) => {
   const isEditMode = mode === "edit"
@@ -438,7 +440,9 @@ const QuyDinhManagement = () => {
   }
 
   const handleDelete = async (quydinh) => {
-    if (window.confirm(`Bạn có chắc muốn xóa niên khóa ${quydinh.TenNienKhoa} và quy định liên quan?`)) {
+    const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa niên khóa ${quydinh.TenNienKhoa} và quy định liên quan?`);
+    if (!isConfirmed) return;
+    {
       try {
         await api.delete(`/api/configurations/quydinh/${quydinh.IDNienKhoa}/`)
         setSuccess("Xóa thành công!")

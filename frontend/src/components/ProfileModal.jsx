@@ -1,3 +1,4 @@
+// src/components/ProfileModal.jsx
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import api from '../api';
