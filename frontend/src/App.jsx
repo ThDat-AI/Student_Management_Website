@@ -33,10 +33,7 @@ import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
 import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
-import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
-import BaoCaoTongKetMon from "./pages/GiaoVu/BaoCaoTongKetMon";
-import BaoCaoTongKetHocKy from "./pages/BGH/BaoCaoTongKetHocKy";
-import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
+import BaoCaoTongKetMon from "./pages/GiaoVu/BaoCaoTongKetMon"
 import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
 
 
