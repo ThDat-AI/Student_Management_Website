@@ -31,6 +31,8 @@ import NhapDiemHocSinh from "./pages/GiaoVien/NhapDiemHocSinh";
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 
+import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
+
 function App() {
   return (
     <Router>
@@ -59,6 +61,7 @@ function App() {
                   <Route path="bgh/baocao" element={<BaoCaoThongKe />} />
                   <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKy />} />
                   <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMonBGH />} />
+                  <Route path="bgh/monhoc" element={<QuanLyMonHoc />} />
                 </Route>
 
                 {/* Giao Vu routes */}

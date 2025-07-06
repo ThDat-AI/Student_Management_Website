@@ -5,9 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsBGH # Import permission IsBGH
 from .models import ToHop, MonHoc
 from .serializers import ToHopSerializer, MonHocSerializer
+
 from classes.models import LopHoc
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from configurations.models import NienKhoa
+from .serializers import NienKhoaSerializer
+
 
 class ToHopListView(generics.ListAPIView):
     queryset = ToHop.objects.all()
@@ -36,3 +40,8 @@ class MonHocTheoLopView(APIView):
             return Response(serializer.data)
         except LopHoc.DoesNotExist:
             return Response({"detail": "Lớp học không tồn tại."}, status=404)
+        
+class NienKhoaListView(generics.ListAPIView):
+    queryset = NienKhoa.objects.all()
+    serializer_class = NienKhoaSerializer
+    permission_classes = [IsAuthenticated]
