@@ -48,7 +48,7 @@ const BGHDashboard = () => {
 
   const menuItems = [
     { title: "Quản lý tài khoản", description: "Tạo, sửa, xóa các tài khoản trong hệ thống.", icon: <FaUsers />, color: "primary", path: "/bgh/taikhoan" },
-    { title: "Báo cáo & Thống kê", description: "Xem các báo cáo tổng quan về học tập và hệ thống.", icon: <FaChartBar />, color: "success", path: "/bgh/baocao-hocky" },
+    { title: "Báo cáo & Thống kê", description: "Xem các báo cáo tổng quan về học tập và hệ thống.", icon: <FaChartBar />, color: "success", path: "/bgh/baocao" },
     { title: "Cài đặt hệ thống", description: "Cấu hình các thông số chung của năm học, quy định.", icon: <FaCog />, color: "warning", path: "/bgh/quydinh" },
   ];
 

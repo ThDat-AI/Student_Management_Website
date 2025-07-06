@@ -1,8 +1,11 @@
 from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsBGH, IsGiaoVu, IsGiaoVien
-from .models import Khoi, LopHoc
+from .models import Khoi, LopHoc, LopHoc_MonHoc
 from .serializers import KhoiSerializer, LopHocSerializer
+from subjects.serializers import MonHocSerializer
 
 # Danh sách khối học (chỉ BGH được xem)
 class KhoiListView(generics.ListAPIView):
@@ -33,3 +36,16 @@ class LopHocListView(generics.ListAPIView):
         if nienkhoa_id:
             queryset = queryset.filter(IDNienKhoa__id=nienkhoa_id)
         return queryset
+
+# Danh sách môn học theo lớp học (cho giáo viên nhập điểm)
+class MonHocTheoLopView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        lop_hoc_id = request.query_params.get('lop_hoc_id')
+        if not lop_hoc_id:
+            return Response({"detail": "Thiếu ID lớp học"}, status=400)
+
+        mon_hoc_qs = LopHoc_MonHoc.objects.filter(IDLopHoc_id=lop_hoc_id).select_related('IDMonHoc')
+        mon_hoc_list = [mh.IDMonHoc for mh in mon_hoc_qs]
+        return Response(MonHocSerializer(mon_hoc_list, many=True).data)

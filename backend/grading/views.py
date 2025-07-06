@@ -6,7 +6,6 @@ from rest_framework.decorators import api_view, permission_classes
 
 from django.http import HttpResponse
 import openpyxl
-from reportlab.pdfgen import canvas
 
 from grading.models import DiemSo, HocKy
 from grading.serializers import DiemSoSerializer, HocKySerializer, HocSinhDiemSerializer
@@ -122,7 +121,7 @@ class XuatExcelDiemSoAPIView(APIView):
                 else None
             )
             ket_qua = "Đạt" if tb is not None and tb >= diem_dat_mon else "Không đạt"
-            ho_ten = getattr(d.IDHocSinh, 'ho_ten', 'Không rõ')
+            ho_ten = f"{d.IDHocSinh.Ho} {d.IDHocSinh.Ten}"
 
             ws.append([
                 ho_ten,
@@ -135,55 +134,4 @@ class XuatExcelDiemSoAPIView(APIView):
         response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         response["Content-Disposition"] = "attachment; filename=bang_diem.xlsx"
         wb.save(response)
-        return response
-
-
-# API xuất PDF bảng điểm
-class XuatPDFDiemSoAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        IDNienKhoa = request.query_params.get("IDNienKhoa")
-        IDLopHoc = request.query_params.get("IDLopHoc")
-        IDMonHoc = request.query_params.get("IDMonHoc")
-        IDHocKy = request.query_params.get("IDHocKy")
-
-        qs = DiemSo.objects.filter(
-            IDLopHoc=IDLopHoc,
-            IDMonHoc=IDMonHoc,
-            IDHocKy=IDHocKy,
-            IDHocSinh__IDNienKhoaTiepNhan=IDNienKhoa
-        ).select_related("IDHocSinh")
-
-        response = HttpResponse(content_type="application/pdf")
-        response["Content-Disposition"] = "attachment; filename=bang_diem.pdf"
-
-        p = canvas.Canvas(response)
-        p.setFont("Helvetica", 12)
-        y = 800
-        p.drawString(50, y, "Bảng điểm học sinh")
-        y -= 30
-        p.drawString(50, y, "Họ tên - Điểm 15p - Điểm 1 tiết - Điểm TB - Kết quả")
-        y -= 20
-
-        diem_dat_mon = ThamSo.objects.last().DiemDatMon if ThamSo.objects.exists() else 5.0
-
-        for d in qs:
-            tb = (
-                (d.Diem15 + 2 * d.Diem1Tiet) / 3
-                if d.Diem15 is not None and d.Diem1Tiet is not None
-                else None
-            )
-            ket_qua = "Đạt" if tb is not None and tb >= diem_dat_mon else "Không đạt"
-            ho_ten = getattr(d.IDHocSinh, 'ho_ten', 'Không rõ')
-            row = f"{ho_ten} - {d.Diem15 or ''} - {d.Diem1Tiet or ''} - {f'{tb:.2f}' if tb else ''} - {ket_qua}"
-
-            p.drawString(50, y, row)
-            y -= 20
-            if y < 50:
-                p.showPage()
-                y = 800
-
-        p.showPage()
-        p.save()
         return response

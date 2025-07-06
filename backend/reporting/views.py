@@ -181,27 +181,3 @@ class ExportBaoCaoHocKyExcel(APIView):
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": "attachment; filename=bao_cao_hoc_ky.xlsx"},
         )
-
-
-class ExportBaoCaoHocKyPDF(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        request._request.path = "/api/reporting/baocao/hocky/"
-        response = BaoCaoHocKyView().get(request)
-        data = response.data
-
-        buffer = io.BytesIO()
-        p = canvas.Canvas(buffer)
-        p.setFont("Helvetica", 12)
-        p.drawString(100, 800, "BÁO CÁO TỔNG KẾT HỌC KỲ")
-
-        y = 770
-        for row in data:
-            p.drawString(50, y, f"Lớp: {row['TenLop']} | Sĩ số: {row['SiSo']} | Đạt: {row['SoLuongDat']} | Tỉ lệ: {row['TiLe']}%")
-            y -= 20
-
-        p.showPage()
-        p.save()
-        buffer.seek(0)
-        return HttpResponse(buffer, content_type='application/pdf')

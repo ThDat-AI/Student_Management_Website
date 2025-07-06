@@ -5,7 +5,7 @@ import {
 import { FaClipboardList } from "react-icons/fa";
 import { useLayout } from "../../contexts/LayoutContext";
 import api from "../../api";
-import '../../assets/styles/GiaoVienDashboard.css'; // dùng lại style
+import '../../assets/styles/GiaoVienDashboard.css';
 
 const NhapDiemHocSinh = () => {
   const [filters, setFilters] = useState({ nienKhoa: "", lopHoc: "", monHoc: "", hocKy: "" });
@@ -15,6 +15,7 @@ const NhapDiemHocSinh = () => {
   const [diemDatMon, setDiemDatMon] = useState(5.0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [invalidInputs, setInvalidInputs] = useState({});
 
   const { setPageTitle } = useLayout();
 
@@ -34,9 +35,16 @@ const NhapDiemHocSinh = () => {
   useEffect(() => {
     if (filters.nienKhoa) {
       fetchLopHoc(filters.nienKhoa);
-      setFilters(prev => ({ ...prev, lopHoc: "" }));
+      setFilters(prev => ({ ...prev, lopHoc: "", monHoc: "" }));
     }
   }, [filters.nienKhoa]);
+
+  useEffect(() => {
+    if (filters.lopHoc) {
+      fetchMonHocTheoLop(filters.lopHoc);
+      setFilters(prev => ({ ...prev, monHoc: "" }));
+    }
+  }, [filters.lopHoc]);
 
   useEffect(() => {
     const { nienKhoa, lopHoc, monHoc, hocKy } = filters;
@@ -45,28 +53,38 @@ const NhapDiemHocSinh = () => {
 
   const fetchDropdowns = async () => {
     try {
-      const [nk, hk, mh] = await Promise.all([
+      const [nk, hk] = await Promise.all([
         api.get("/api/students/filters/nienkhoa/"),
-        api.get("/api/grading/hocky-list/"),
-        api.get("/api/subjects/monhoc-list/")
+        api.get("/api/grading/hocky-list/")
       ]);
       setDropdowns(prev => ({
         ...prev,
-        nienKhoaList: nk.data,
-        hocKyList: hk.data,
-        monHocList: mh.data
+        nienKhoaList: nk.data || [],
+        hocKyList: hk.data || []
       }));
     } catch (err) {
       setError("Lỗi khi tải dropdown: " + err.message);
+      console.error(err);
     }
   };
 
   const fetchLopHoc = async (nienKhoaId) => {
     try {
       const res = await api.get(`/api/classes/lophoc-list/?nienkhoa_id=${nienKhoaId}`);
-      setDropdowns(prev => ({ ...prev, lopHocList: res.data }));
+      setDropdowns(prev => ({ ...prev, lopHocList: res.data || [] }));
     } catch (err) {
       setError("Lỗi khi tải lớp học: " + err.message);
+      console.error(err);
+    }
+  };
+
+  const fetchMonHocTheoLop = async (lopHocId) => {
+    try {
+      const res = await api.get(`/api/subjects/monhoc-theo-lop/${lopHocId}/`);
+      setDropdowns(prev => ({ ...prev, monHocList: res.data || [] }));
+    } catch (err) {
+      setError("Lỗi khi tải môn học theo lớp: " + err.message);
+      console.error(err);
     }
   };
 
@@ -74,7 +92,7 @@ const NhapDiemHocSinh = () => {
     try {
       const res = await api.get("/api/configurations/quydinh/latest/");
       setDiemDatMon(res.data?.DiemDatMon || 5.0);
-    } catch {
+    } catch (err) {
       console.warn("Không thể tải điểm đạt môn. Dùng mặc định 5.0");
     }
   };
@@ -86,9 +104,10 @@ const NhapDiemHocSinh = () => {
       const res = await api.get("/api/grading/diemso/", {
         params: { IDNienKhoa: nienKhoa, IDLopHoc: lopHoc, IDMonHoc: monHoc, IDHocKy: hocKy }
       });
-      setHocSinhData(res.data);
+      setHocSinhData(res.data || []);
     } catch (err) {
       setError("Lỗi khi tải bảng điểm: " + err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -97,10 +116,28 @@ const NhapDiemHocSinh = () => {
   const handleChangeDiem = (index, field, value) => {
     const updated = [...hocSinhData];
     updated[index][field] = value;
+
+    const parsed = parseFloat(value);
+    setInvalidInputs(prev => ({
+      ...prev,
+      [`${index}-${field}`]: value !== "" && (isNaN(parsed) || parsed < 0 || parsed > 10)
+    }));
+
     setHocSinhData(updated);
   };
 
   const handleLuuDiem = async () => {
+    const invalids = hocSinhData.filter((hs, idx) => {
+      const d15 = parseFloat(hs.Diem15);
+      const d1t = parseFloat(hs.Diem1Tiet);
+      return (!isNaN(d15) && (d15 < 0 || d15 > 10)) || (!isNaN(d1t) && (d1t < 0 || d1t > 10));
+    });
+
+    if (invalids.length > 0) {
+      setError("Có điểm không hợp lệ. Vui lòng kiểm tra lại (0 đến 10).");
+      return;
+    }
+
     try {
       setLoading(true);
       for (const hs of hocSinhData) {
@@ -117,6 +154,7 @@ const NhapDiemHocSinh = () => {
       fetchBangDiem();
     } catch (err) {
       setError("Lỗi khi lưu điểm: " + err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -129,48 +167,38 @@ const NhapDiemHocSinh = () => {
     return ((d1 + 2 * d2) / 3).toFixed(2);
   };
 
-  const exportBangDiem = async (type) => {
+  const exportBangDiemExcel = async () => {
     const { nienKhoa, lopHoc, monHoc, hocKy } = filters;
-    const endpoint = type === "excel" ? "/api/grading/diemso/xuat-excel/" : "/api/grading/diemso/xuat-pdf/";
-
     try {
-      const res = await api.get(endpoint, {
+      const res = await api.get("/api/grading/diemso/xuat-excel/", {
         params: { IDNienKhoa: nienKhoa, IDLopHoc: lopHoc, IDMonHoc: monHoc, IDHocKy: hocKy },
         responseType: "blob"
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `bang_diem.${type === "excel" ? "xlsx" : "pdf"}`);
+      link.setAttribute("download", "bang_diem.xlsx");
       document.body.appendChild(link);
       link.click();
     } catch (err) {
-      setError("Lỗi khi xuất file: " + err.message);
+      setError("Lỗi khi xuất Excel: " + err.message);
+      console.error(err);
     }
   };
 
   return (
     <div className="dashboard-container">
       <Container fluid className="px-4 py-4">
-        {/* Banner giống dashboard */}
         <div className="welcome-banner p-4 rounded-4 position-relative overflow-hidden mb-4">
           <div className="banner-bg-animation">
-            <div className="floating-orb orb-1"></div>
-            <div className="floating-orb orb-2"></div>
-            <div className="floating-orb orb-3"></div>
-            <div className="floating-orb orb-4"></div>
-            <div className="floating-orb orb-5"></div>
+            {[...Array(5)].map((_, i) => <div key={i} className={`floating-orb orb-${i + 1}`}></div>)}
           </div>
           <div className="grid-pattern"></div>
           <div className="wave-animation">
-            <div className="wave wave-1"></div>
-            <div className="wave wave-2"></div>
-            <div className="wave wave-3"></div>
+            {[1, 2, 3].map(i => <div key={i} className={`wave wave-${i}`}></div>)}
           </div>
           <div className="particles">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className={`particle particle-${i + 1}`}></div>
-            ))}
+            {[...Array(6)].map((_, i) => <div key={i} className={`particle particle-${i + 1}`}></div>)}
           </div>
           <div className="shimmer-effect"></div>
           <div className="welcome-content d-flex align-items-center">
@@ -195,7 +223,6 @@ const NhapDiemHocSinh = () => {
           </div>
         </div>
 
-        {/* Bộ lọc và bảng điểm */}
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Row className="mb-3">
@@ -206,7 +233,7 @@ const NhapDiemHocSinh = () => {
                 onChange={(e) => setFilters({ ...filters, [field]: e.target.value })}
               >
                 <option value="">Chọn {fieldLabels[field]}</option>
-                {dropdowns[`${field}List`]?.map((item) => (
+                {(dropdowns[`${field}List`] || []).map((item) => (
                   <option key={item.id} value={item.id}>
                     {field === "nienKhoa" && item.TenNienKhoa}
                     {field === "lopHoc" && item.TenLop}
@@ -246,6 +273,7 @@ const NhapDiemHocSinh = () => {
                             type="number"
                             step="0.1"
                             value={hs.Diem15 || ""}
+                            isInvalid={invalidInputs[`${index}-Diem15`]}
                             onChange={(e) => handleChangeDiem(index, "Diem15", e.target.value)}
                           />
                         ) : hs.Diem15 ?? ""}
@@ -256,6 +284,7 @@ const NhapDiemHocSinh = () => {
                             type="number"
                             step="0.1"
                             value={hs.Diem1Tiet || ""}
+                            isInvalid={invalidInputs[`${index}-Diem1Tiet`]}
                             onChange={(e) => handleChangeDiem(index, "Diem1Tiet", e.target.value)}
                           />
                         ) : hs.Diem1Tiet ?? ""}
@@ -272,8 +301,7 @@ const NhapDiemHocSinh = () => {
               {!isEditing ? (
                 <>
                   <Button onClick={() => setIsEditing(true)}>Sửa điểm</Button>
-                  <Button variant="success" onClick={() => exportBangDiem("excel")}>Xuất Excel</Button>
-                  <Button variant="danger" onClick={() => exportBangDiem("pdf")}>Xuất PDF</Button>
+                  <Button variant="success" onClick={exportBangDiemExcel}>Xuất Excel</Button>
                 </>
               ) : (
                 <>

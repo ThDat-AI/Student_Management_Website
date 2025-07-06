@@ -1,9 +1,8 @@
-// frontend/src/pages/GiaoVu/BaoCaoTongKetMon.jsx
 import React, { useEffect, useState } from "react";
 import {
   Container, Row, Col, Form, Button, Table, Spinner, Alert
 } from "react-bootstrap";
-import { FaChartBar } from "react-icons/fa";
+import { FaChartBar, FaFileExcel } from "react-icons/fa";
 import api from "../../api";
 import "../../assets/styles/GiaoVuDashboard.css";
 
@@ -58,27 +57,23 @@ const BaoCaoTongKetMon = () => {
     }
   };
 
-  const exportFile = async (type) => {
+  const exportExcel = async () => {
     const { nienKhoa, monHoc, hocKy } = filters;
     if (!nienKhoa || !monHoc || !hocKy) return;
 
-    const endpoint = type === "excel"
-      ? "/api/reporting/baocao/monhoc/xuat-excel/"
-      : "/api/reporting/baocao/monhoc/xuat-pdf/";
-
     try {
-      const res = await api.get(endpoint, {
+      const res = await api.get("/api/reporting/baocao/monhoc/xuat-excel/", {
         params: { IDNienKhoa: nienKhoa, IDMonHoc: monHoc, IDHocKy: hocKy },
         responseType: "blob"
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `bao_cao_mon_hoc.${type === "excel" ? "xlsx" : "pdf"}`);
+      link.setAttribute("download", "bao_cao_mon_hoc.xlsx");
       document.body.appendChild(link);
       link.click();
     } catch (err) {
-      setError("Lỗi khi xuất file: " + err.message);
+      setError("Lỗi khi xuất Excel: " + err.message);
     }
   };
 
@@ -212,11 +207,8 @@ const BaoCaoTongKetMon = () => {
               </tbody>
             </Table>
             <div className="d-flex gap-2">
-              <Button variant="success" onClick={() => exportFile("excel")}>
-                Xuất Excel
-              </Button>
-              <Button variant="danger" onClick={() => exportFile("pdf")}>
-                Xuất PDF
+              <Button variant="success" onClick={exportExcel}>
+                <FaFileExcel className="me-2" /> Xuất Excel
               </Button>
             </div>
           </>
