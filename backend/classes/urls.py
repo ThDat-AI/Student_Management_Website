@@ -8,7 +8,9 @@ from .views import (
     LopHocListView,
     MonHocTheoLopView,
     LopHocMonHocUpdateView,
-    LopHocHocSinhManagementView
+    LopHocHocSinhManagementView,
+    XuatDanhSachHocSinhView,
+    DanhSachHocSinhJsonView
 )
 
 urlpatterns = [
@@ -19,5 +21,7 @@ urlpatterns = [
     path('monhoc-theo-lop/', MonHocTheoLopView.as_view(), name='monhoc-theo-lop'),
     path('lophoc/<int:pk>/monhoc/', LopHocMonHocUpdateView.as_view(), name='lophoc-monhoc-update'),
     path('lophoc/<int:pk>/hocsinh/', LopHocHocSinhManagementView.as_view(), name='lophoc-hocsinh-management'),
+    path('lophoc/xuat-danh-sach/', XuatDanhSachHocSinhView.as_view(), name='xuat-danh-sach-hoc-sinh'),
+    path('lophoc/danh-sach-json/', DanhSachHocSinhJsonView.as_view(), name='danh-sach-hoc-sinh-json')
 
 ]

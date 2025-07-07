@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q
 
 from accounts.permissions import IsBGH, IsGiaoVu
 from .models import Khoi, LopHoc, LopHoc_MonHoc, LopHoc_HocSinh
@@ -16,6 +15,13 @@ from subjects.models import MonHoc
 from subjects.serializers import MonHocSerializer
 
 from configurations.models import ThamSo
+
+from django.http import HttpResponse
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+
 
 # Danh sách khối học (dropdown)
 class KhoiListView(generics.ListAPIView):
@@ -213,3 +219,112 @@ class LopHocHocSinhManagementView(APIView):
         lop_hoc.HocSinh.set(student_ids)
 
         return Response({"message": f"Cập nhật danh sách học sinh cho lớp {lop_hoc.TenLop} thành công."}, status=status.HTTP_200_OK)
+    
+
+class XuatDanhSachHocSinhView(APIView):
+    """
+    API để xuất danh sách học sinh của một lớp ra file Excel.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        lophoc_id = request.query_params.get('lophoc_id')
+        if not lophoc_id:
+            return Response({"detail": "Vui lòng cung cấp ID của lớp học."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            lop_hoc = LopHoc.objects.select_related('IDNienKhoa').get(pk=lophoc_id)
+        except LopHoc.DoesNotExist:
+            return Response({"detail": "Lớp học không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+        hoc_sinh_list = lop_hoc.HocSinh.all().order_by('Ten', 'Ho')
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"DS Lớp {lop_hoc.TenLop}"
+
+        title_font = Font(name='Calibri', size=16, bold=True)
+        header_font = Font(name='Calibri', size=12, bold=True)
+        center_alignment = Alignment(horizontal='center', vertical='center')
+        left_alignment = Alignment(horizontal='left', vertical='center')
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+        ws.merge_cells('A1:F1')
+        title_cell = ws['A1']
+        title_cell.value = "DANH SÁCH HỌC SINH"
+        title_cell.font = title_font
+        title_cell.alignment = center_alignment
+
+        ws.append([])
+        ws.append(['Niên khóa:', lop_hoc.IDNienKhoa.TenNienKhoa])
+        ws['A3'].font = header_font
+        ws.append(['Lớp:', lop_hoc.TenLop])
+        ws['A4'].font = header_font
+        ws.append([])
+
+        table_headers = ['STT', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ']
+        ws.append(table_headers)
+        header_row_num = ws.max_row
+        
+        for cell in ws[header_row_num]:
+            cell.font = header_font
+            cell.alignment = center_alignment
+
+        for index, hs in enumerate(hoc_sinh_list, start=1):
+            ws.append([
+                index, f"{hs.Ho} {hs.Ten}", hs.GioiTinh,
+                hs.NgaySinh.strftime('%d/%m/%Y'), hs.Email or '', hs.DiaChi
+            ])
+
+        for row_cells in ws.iter_rows(min_row=header_row_num, max_row=ws.max_row):
+            for cell in row_cells:
+                cell.border = thin_border
+        
+        # === SỬA LỖI VÒNG LẶP ĐIỀU CHỈNH ĐỘ RỘNG CỘT ===
+        # Lặp qua chỉ số cột thay vì đối tượng cột
+        for col_index in range(1, len(table_headers) + 1):
+            # Lấy ký tự cột từ chỉ số (1 -> 'A', 2 -> 'B')
+            column_letter = get_column_letter(col_index)
+            max_length = 0
+            # Lặp qua các ô trong cột đó
+            for cell in ws[column_letter]:
+                # Căn lề trái cho các ô dữ liệu (không phải tiêu đề và cột STT)
+                if cell.row > header_row_num and cell.column > 1:
+                     cell.alignment = left_alignment
+                try:
+                    # Kiểm tra giá trị của ô để tìm độ dài lớn nhất
+                    if cell.value:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                except:
+                    pass
+            # Điều chỉnh độ rộng cột
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+        # --- TRẢ VỀ RESPONSE ---
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = f"Danh_sach_lop_{lop_hoc.TenLop}_{lop_hoc.IDNienKhoa.TenNienKhoa}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename*="UTF-8\'\'{filename}"' 
+        wb.save(response)
+        return response
+    
+
+class DanhSachHocSinhJsonView(generics.ListAPIView):
+    """
+    API trả về danh sách học sinh của một lớp dưới dạng JSON để hiển thị trên web.
+    """
+    serializer_class = HocSinhSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        lophoc_id = self.request.query_params.get('lophoc_id')
+        if not lophoc_id:
+            return HocSinh.objects.none() # Trả về rỗng nếu không có ID lớp
+
+        try:
+            lop_hoc = LopHoc.objects.get(pk=lophoc_id)
+            # Lấy danh sách học sinh và sắp xếp theo Tên, Họ
+            return lop_hoc.HocSinh.all().order_by('Ten', 'Ho')
+        except LopHoc.DoesNotExist:
+            return HocSinh.objects.none()

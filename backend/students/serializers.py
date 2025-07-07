@@ -27,3 +27,32 @@ class HocSinhSerializer(serializers.ModelSerializer):
         if value and value > date.today():
             raise serializers.ValidationError("Ngày sinh không được lớn hơn ngày hiện tại.")
         return value
+    
+class TraCuuHocSinhSerializer(serializers.ModelSerializer):
+    """
+    Serializer để hiển thị thông tin tra cứu của học sinh,
+    bao gồm điểm trung bình các học kỳ được tính toán từ view.
+    """
+    HoTen = serializers.SerializerMethodField(read_only=True)
+    TenLop = serializers.SerializerMethodField(read_only=True)
+    
+    # Các trường này sẽ được cung cấp bởi `annotate` trong view
+    DiemTB_HK1 = serializers.FloatField(read_only=True)
+    DiemTB_HK2 = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = HocSinh
+        fields = [
+            'id',
+            'HoTen',
+            'TenLop',
+            'DiemTB_HK1',
+            'DiemTB_HK2',
+        ]
+
+    def get_HoTen(self, obj):
+        return f"{obj.Ho} {obj.Ten}"
+
+    def get_TenLop(self, obj):
+        # Lấy tên lớp từ context được truyền vào từ view
+        return self.context.get('lop_hoc_name', '')

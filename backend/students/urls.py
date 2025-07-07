@@ -10,4 +10,6 @@ urlpatterns = [
     # URLs cho các dropdown lọc (đã được đổi tên rõ ràng hơn)
     path('filters/nienkhoa/', views.NienKhoaFilterListView.as_view(), name='hocsinh-filter-nienkhoa'),
     path('filters/khoi/', views.KhoiFilterListView.as_view(), name='hocsinh-filter-khoi'),
+
+    path('tra-cuu/', views.TraCuuHocSinhView.as_view(), name='tra-cuu-hoc-sinh'),
 ]
