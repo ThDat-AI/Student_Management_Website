@@ -27,7 +27,7 @@ const GiaoVienDashboard = () => {
       description: "Tạo và xuất danh sách học sinh của các lớp chủ nhiệm.", 
       icon: <FaFileExport />, 
       color: "success", 
-      path: "/giaovien/xuat-danh-sach-lop" 
+      path: "/giaovien/danh-sach-lop" 
     },
     { 
       title: "Quản lý điểm", 

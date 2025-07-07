@@ -177,3 +177,17 @@
 /* PERFORMANCE OPTIMIZATION */
 .welcome-banner *, .welcome-banner *::before, .welcome-banner *::after { will-change: transform, opacity; }
 @media (prefers-reduced-motion: reduce) { .welcome-banner *, .welcome-banner *::before, .welcome-banner *::after { animation: none !important; transition: none !important; } }
+
+
+.function-card-sub {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.function-card-sub:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+.function-icon-sub {
+    font-size: 2.5rem;
+    color: var(--bs-primary);
+}

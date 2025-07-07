@@ -12,9 +12,7 @@ import LopHocModal from './components/LopHocModal';
 import MonHocModal from './components/MonHocModal';
 import confirmDelete from '../../../components/ConfirmDelete';
 
-// ====================================================================
-// === HÀM HELPER ĐA NĂNG ĐỂ "DỊCH" LỖI TỪ API RA VĂN BẢN ===
-// ====================================================================
+
 const parseApiError = (error) => {
     // 1. Lỗi mạng hoặc lỗi không xác định
     if (!error.response) {
@@ -95,9 +93,7 @@ const QuanLyLopHoc = () => {
     const handleShowEditModal = (lop) => { setModalMode('edit'); setSelectedLopHoc(lop); setShowLopHocModal(true); };
     const handleShowMonHocModal = (lop) => { setSelectedLopHoc(lop); setShowMonHocModal(true); };
 
-    // ====================================================================
-    // === CÁC HÀM SUBMIT VÀ DELETE ĐÃ ĐƯỢC CẬP NHẬT ===
-    // ====================================================================
+
     const handleSubmitLopHoc = async (formData, lopHocId) => {
         try {
             if (modalMode === 'create') {

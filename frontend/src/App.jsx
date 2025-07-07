@@ -1,7 +1,10 @@
-// App.jsx
+// src/App.jsx
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Context providers
 import { AuthProvider } from "./contexts/AuthContext";
@@ -31,12 +34,20 @@ import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
 
 // Giao Vu pages
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
+// CÁC TRANG NHÓM MỚI
+import QuanLyHocSinhPage from "./pages/GiaoVu/StudentManagement/QuanLyHocSinhpage";
+import QuanLyDanhSachLopPage from "./pages/GiaoVu/StudentManagement/QuanLyDanhSachLopPage";
+// CÁC TRANG CHỨC NĂNG CON
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
+// import TraCuuHocSinhGV from "./pages/GiaoVu/TraCuuHocSinhGV"; // Trang tra cứu của GV
+import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
+import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop";
+// import XuatDanhSachLop from "./pages/GiaoVu/XuatDanhSachLop"; // Trang xuất file của GV
+// CÁC TRANG BÁO CÁO
 import BaoCaoThongKeGV from "./pages/GiaoVu/BaoCaoThongKe";
 import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon";
 import BaoCaoTongKetHocKyGV from "./pages/GiaoVu/BaoCaoTongKetHocKy";
-import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
-import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop"
+
 
 // Giao Vien pages
 import GiaoVienDashboard from "./pages/GiaoVien/GiaoVienDashboard";
@@ -49,19 +60,30 @@ function App() {
     <Router>
       <AuthProvider>
         <LayoutProvider>
+          {/* Thêm ToastContainer ở đây để dùng toast global */}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
           <Routes>
-
-            {/* Guest Routes (chưa đăng nhập) */}
+            {/* Guest Routes */}
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/password-reset" element={<PasswordResetRequest />} />
               <Route path="/password-reset/confirm" element={<PasswordResetConfirm />} />
             </Route>
 
-            {/* Unauthorized page */}
             <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Protected Routes (sau khi đăng nhập) */}
+            {/* Protected Routes */}
             <Route path="/" element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route index element={<HomeRedirect />} />
@@ -77,15 +99,27 @@ function App() {
                   <Route path="bgh/monhoc" element={<QuanLyMonHoc />} />
                 </Route>
 
-                {/* Giao Vu Routes */}
-                <Route element={<ProtectedRoute allowedRoles={["GiaoVu"]} />}>
+                {/* Giao Vu Routes - ĐÃ CẤU TRÚC LẠI */}
+                <Route element={<ProtectedRoute allowedRoles={["GiaoVu", "BGH"]} />}>
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
-                  <Route path="giaovu/hocsinh" element={<StudentManagement />} />
+                  
+                  {/* Nhóm Quản lý học sinh */}
+                  <Route path="giaovu/hoc-sinh" element={<QuanLyHocSinhPage />} />
+                  <Route path="giaovu/hoc-sinh/tiep-nhan" element={<StudentManagement />} />
+                  <Route path="giaovu/hoc-sinh/tra-cuu" element={<TraCuuHocSinh />} />
+                  
+                  {/* Quản lý lớp học (tạo lớp) */}
+                  <Route path="giaovu/quan-ly-lop-hoc" element={<QuanLyLopHoc />} />
+                  
+                  {/* Nhóm Danh sách lớp */}
+                  <Route path="giaovu/danh-sach-lop" element={<QuanLyDanhSachLopPage />} />
+                  <Route path="giaovu/danh-sach-lop/lap-danh-sach" element={<LapDanhSachLop />} />
+                  <Route path="giaovu/danh-sach-lop/xuat-danh-sach" element={<DanhSachLop />} />
+                  
+                  {/* Báo cáo */}
                   <Route path="giaovu/baocao" element={<BaoCaoThongKeGV />} />
                   <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
                   <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
-                  <Route path="giaovu/quan-ly-lop-hoc" element={<QuanLyLopHoc />} />
-                  <Route path="giaovu/lap-danh-sach-lop" element={<LapDanhSachLop />} />
                 </Route>
 
                 {/* Giao Vien Routes */}
@@ -93,14 +127,13 @@ function App() {
                   <Route path="giaovien" element={<GiaoVienDashboard />} />
                   <Route path="giaovien/quan-ly-diem" element={<NhapDiemHocSinh />} />
                   <Route path="giaovien/tra-cuu" element={<TraCuuHocSinh />} />
-                  <Route path="giaovien/xuat-danh-sach-lop" element={<DanhSachLop />} />
+                  <Route path="giaovien/danh-sach-lop" element={<DanhSachLop />} />
                 </Route>
+
               </Route>
             </Route>
 
-            {/* 404 Not Found */}
             <Route path="*" element={<NotFound />} />
-
           </Routes>
         </LayoutProvider>
       </AuthProvider>

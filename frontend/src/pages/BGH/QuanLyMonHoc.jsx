@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Container, Row, Col, Table, Form, Button, Spinner, Modal, InputGroup, FormControl, Alert
+  Container, Row, Col, Table, Form, Button, Spinner, Modal, InputGroup, FormControl, Alert, Card
 } from "react-bootstrap";
-// SỬ DỤNG BỘ ICON FONT AWESOME ĐỂ ĐỒNG BỘ
-import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { FaEdit, FaTrash, FaSearch, FaPlus } from "react-icons/fa";
 import api from "../../api";
 import { useDebounce } from 'use-debounce';
+import { toast } from 'react-toastify';
+import { useLayout } from "../../contexts/LayoutContext";
 
 const QuanLyMonHoc = () => {
+  const { setPageTitle } = useLayout();
   const [dsMonHoc, setDsMonHoc] = useState([]);
   const [dsNienKhoa, setDsNienKhoa] = useState([]);
   const [dsToHop, setDsToHop] = useState([]);
@@ -21,12 +23,13 @@ const QuanLyMonHoc = () => {
   const [error, setError] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ TenMonHoc: "", IDToHop: "" });
   const [formError, setFormError] = useState("");
 
-  // Tải danh sách Niên khóa và Tổ hợp một lần
   useEffect(() => {
+    setPageTitle("Quản lý Môn học");
     const fetchFilters = async () => {
       try {
         const [resNK, resTH] = await Promise.all([
@@ -36,14 +39,12 @@ const QuanLyMonHoc = () => {
         setDsNienKhoa(resNK.data);
         setDsToHop(resTH.data);
       } catch (error) {
-        console.error("Lỗi tải bộ lọc:", error);
         setError("Không thể tải dữ liệu cho các bộ lọc.");
       }
     };
     fetchFilters();
-  }, []);
+  }, [setPageTitle]);
 
-  // Hàm tải danh sách Môn học, được gọi lại khi bộ lọc thay đổi
   const fetchMonHoc = useCallback(async () => {
     if (!selectedNienKhoa) {
       setDsMonHoc([]);
@@ -56,10 +57,10 @@ const QuanLyMonHoc = () => {
       if (filterToHop) params.append('tohop_id', filterToHop);
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-      const res = await api.get(`/api/subjects/monhoc/?${params.toString()}`);
+      // === SỬA LỖI URL Ở ĐÂY ===
+      const res = await api.get(`/api/subjects/monhoc-list/?${params.toString()}`);
       setDsMonHoc(res.data);
     } catch (error) {
-      console.error("Lỗi tải môn học:", error);
       setError("Đã xảy ra lỗi khi tải danh sách môn học.");
     } finally {
       setLoading(false);
@@ -70,12 +71,11 @@ const QuanLyMonHoc = () => {
     fetchMonHoc();
   }, [fetchMonHoc]);
 
-  // Mở Modal để thêm hoặc sửa
   const handleOpenModal = (mh = null) => {
     setFormError("");
     if (mh) {
       setEditingId(mh.id);
-      setForm({ TenMonHoc: mh.TenMonHoc, IDToHop: mh.IDToHop });
+      setForm({ TenMonHoc: mh.TenMonHoc, IDToHop: mh.IDToHop || "" });
     } else {
       setEditingId(null);
       setForm({ TenMonHoc: "", IDToHop: "" });
@@ -85,169 +85,129 @@ const QuanLyMonHoc = () => {
 
   const handleCloseModal = () => setShowModal(false);
 
-  // Xử lý xóa
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa môn học này?")) {
+  const handleDelete = async (mh) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa môn học "${mh.TenMonHoc}"?`)) {
       try {
-        await api.delete(`/api/subjects/monhoc/${id}/`);
-        fetchMonHoc(); // Tải lại danh sách sau khi xóa
+        await api.delete(`/api/subjects/monhoc/${mh.id}/`);
+        toast.success("Xóa môn học thành công!");
+        fetchMonHoc();
       } catch (error) {
-        alert(error.response?.data?.detail || "Lỗi khi xóa! Môn học có thể đã được sử dụng.");
+        toast.error(error.response?.data?.detail || "Lỗi khi xóa! Môn học có thể đã được sử dụng.");
       }
     }
   };
 
-  // Xử lý lưu (Thêm mới hoặc Cập nhật)
   const handleSave = async () => {
-    // Validation phía client
     if (!form.TenMonHoc.trim()) {
       setFormError("Vui lòng nhập tên môn học.");
       return;
     }
-    if (!form.IDToHop) {
-      setFormError("Vui lòng chọn tổ hợp cho môn học.");
-      return;
-    }
     setFormError("");
+    setIsSubmitting(true);
     
     try {
       const payload = {
         TenMonHoc: form.TenMonHoc.trim(),
         IDNienKhoa: parseInt(selectedNienKhoa),
-        IDToHop: parseInt(form.IDToHop),
+        IDToHop: form.IDToHop ? parseInt(form.IDToHop) : null,
       };
 
       if (editingId) {
         await api.put(`/api/subjects/monhoc/${editingId}/`, payload);
+        toast.success("Cập nhật môn học thành công!");
       } else {
-        await api.post("/api/subjects/monhoc/", payload);
+        await api.post("/api/subjects/monhoc-list/", payload);
+        toast.success("Thêm môn học thành công!");
       }
       handleCloseModal();
-      fetchMonHoc(); // Tải lại danh sách sau khi lưu
+      fetchMonHoc();
     } catch (error) {
-      // Xử lý lỗi từ server
       const errorData = error.response?.data;
-      if (errorData) {
-        if (errorData.TenMonHoc) setFormError(errorData.TenMonHoc[0]);
-        else if (errorData.IDToHop) setFormError("Tổ hợp là bắt buộc.");
-        else if (errorData.non_field_errors) setFormError(errorData.non_field_errors[0]);
-        else if (errorData.detail) setFormError(errorData.detail);
-        else setFormError("Lỗi không xác định. Vui lòng thử lại.");
+      if (errorData && typeof errorData === 'object') {
+        const messages = Object.values(errorData).flat().join(' ');
+        setFormError(messages || "Lỗi không xác định.");
+      } else if (errorData && typeof errorData.detail === 'string') {
+        setFormError(errorData.detail);
       } else {
         setFormError("Lỗi kết nối. Vui lòng thử lại.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Container className="py-4">
-      <h3 className="fw-bold mb-3">Quản lý Môn học</h3>
+      <h2 className="h4 mb-4">Quản lý Môn học</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       
-      <Row className="mb-3">
-        <Col md={4}>
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
           <Form.Group>
             <Form.Label className="fw-bold">Chọn Niên khóa</Form.Label>
             <Form.Select value={selectedNienKhoa} onChange={(e) => setSelectedNienKhoa(e.target.value)}>
-              <option value="">Chọn niên khóa</option>
+              <option value="">-- Vui lòng chọn niên khóa --</option>
               {dsNienKhoa.map((nk) => (<option key={nk.id} value={nk.id}>{nk.TenNienKhoa}</option>))}
             </Form.Select>
           </Form.Group>
-        </Col>
-      </Row>
-
+        </Card.Body>
+      </Card>
+      
       {selectedNienKhoa ? (
-        <>
-          <Row className="mb-3 g-3">
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Lọc theo tổ hợp</Form.Label>
-                <Form.Select value={filterToHop} onChange={(e) => setFilterToHop(e.target.value)}>
-                  <option value="">Tất cả tổ hợp</option>
-                  {dsToHop.map((th) => (<option key={th.id} value={th.id}>{th.TenToHop}</option>))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Tìm kiếm theo tên môn</Form.Label>
-                <InputGroup>
-                  <FormControl placeholder="Nhập tên môn học..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                  <InputGroup.Text><FaSearch /></InputGroup.Text>
-                </InputGroup>
-              </Form.Group>
-            </Col>
-            <Col md={4} className="d-flex align-items-end justify-content-end">
-              <Button variant="primary" onClick={() => handleOpenModal()}>
-                + Thêm Môn học
-              </Button>
-            </Col>
-          </Row>
+        <Card className="shadow-sm">
+          <Card.Header as="h5" className="d-flex justify-content-between align-items-center bg-white p-3">
+            <span>Danh sách môn học</span>
+            <Button variant="primary" onClick={() => handleOpenModal()}><FaPlus className="me-2" /> Thêm Môn học</Button>
+          </Card.Header>
+          <Card.Body>
+            <Row className="mb-3 g-3">
+              <Col md={6}>
+                <Form.Group><Form.Label>Lọc theo tổ hợp</Form.Label><Form.Select value={filterToHop} onChange={(e) => setFilterToHop(e.target.value)}><option value="">Tất cả tổ hợp</option>{dsToHop.map((th) => (<option key={th.id} value={th.id}>{th.TenToHop}</option>))} </Form.Select></Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group><Form.Label>Tìm kiếm theo tên môn</Form.Label><InputGroup><FormControl placeholder="Nhập tên môn học..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><InputGroup.Text><FaSearch /></InputGroup.Text></InputGroup></Form.Group>
+              </Col>
+            </Row>
 
-          {loading ? ( <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div> ) : (
-            <Table striped bordered hover responsive className="shadow-sm">
-              <thead className="table-primary">
-                <tr>
-                  <th className="text-center">#</th>
-                  <th>Tên môn học</th>
-                  <th>Tổ hợp</th>
-                  <th className="text-center" style={{width: '120px'}}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dsMonHoc.length === 0 ? ( <tr><td colSpan="4" className="text-center text-muted p-4">Không có dữ liệu</td></tr> ) : (
-                  dsMonHoc.map((mh, index) => (
-                    <tr key={mh.id}>
-                      <td className="text-center">{index + 1}</td>
-                      <td>{mh.TenMonHoc}</td>
-                      <td>{mh.TenToHop}</td>
-                      <td className="text-center">
-                        {/* === PHẦN THAY ĐỔI THEO YÊU CẦU === */}
-                        <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleOpenModal(mh)} disabled={!mh.is_deletable} title={!mh.is_deletable ? "Không thể sửa vì đã có dữ liệu liên quan" : "Chỉnh sửa"}>
-                          <FaEdit />
-                        </Button>
-                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(mh.id)} disabled={!mh.is_deletable} title={!mh.is_deletable ? "Không thể xóa vì đã có dữ liệu liên quan" : "Xóa"}>
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          )}
-        </>
+            {loading ? ( <div className="text-center py-5"><Spinner animation="border" /></div> ) : (
+              <Table striped bordered hover responsive>
+                <thead className="table-light">
+                  <tr><th>#</th><th>Tên môn học</th><th>Tổ hợp</th><th className="text-center">Thao tác</th></tr>
+                </thead>
+                <tbody>
+                  {dsMonHoc.length === 0 ? ( <tr><td colSpan="4" className="text-center p-4">Không có môn học nào.</td></tr> ) : (
+                    dsMonHoc.map((mh, index) => (
+                      <tr key={mh.id}>
+                        <td className="text-center">{index + 1}</td>
+                        <td>{mh.TenMonHoc}</td>
+                        <td>{mh.TenToHop || <span className="text-muted">Chung</span>}</td>
+                        <td className="text-center">
+                          <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleOpenModal(mh)} disabled={!mh.is_deletable} title={!mh.is_deletable ? "Không thể sửa" : "Chỉnh sửa"}><FaEdit /></Button>
+                          <Button variant="outline-danger" size="sm" onClick={() => handleDelete(mh)} disabled={!mh.is_deletable} title={!mh.is_deletable ? "Không thể xóa" : "Xóa"}><FaTrash /></Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </Table>
+            )}
+          </Card.Body>
+        </Card>
       ) : (
-        <div className="text-center p-5 border rounded bg-light mt-4">
-          <p className="text-muted fs-5">Vui lòng chọn một niên khóa để xem và quản lý môn học.</p>
-        </div>
+        <Alert variant="info" className="text-center">Vui lòng chọn một niên khóa để xem và quản lý môn học.</Alert>
       )}
 
       <Modal show={showModal} onHide={handleCloseModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{editingId ? "Chỉnh sửa Môn học" : "Thêm Môn học mới"}</Modal.Title>
-        </Modal.Header>
+        <Modal.Header closeButton><Modal.Title>{editingId ? "Chỉnh sửa Môn học" : "Thêm Môn học mới"}</Modal.Title></Modal.Header>
         <Modal.Body>
           {formError && <Alert variant="danger">{formError}</Alert>}
-          <Form.Group className="mb-3">
-            <Form.Label>Tên môn học <span className="text-danger">*</span></Form.Label>
-            <Form.Control type="text" placeholder="VD: Toán, Ngữ Văn..." value={form.TenMonHoc} onChange={(e) => setForm({ ...form, TenMonHoc: e.target.value })} />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Tổ hợp <span className="text-danger">*</span></Form.Label>
-            <Form.Select value={form.IDToHop} onChange={(e) => setForm({ ...form, IDToHop: e.target.value })}>
-              <option value="">-- Chọn tổ hợp --</option>
-              {dsToHop.map(th => (<option key={th.id} value={th.id}>{th.TenToHop}</option>))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group>
-            <Form.Label>Niên khóa</Form.Label>
-            <Form.Control type="text" value={dsNienKhoa.find(nk => String(nk.id) === selectedNienKhoa)?.TenNienKhoa || ""} disabled />
-          </Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Tên môn học <span className="text-danger">*</span></Form.Label><Form.Control type="text" placeholder="VD: Toán, Ngữ Văn..." value={form.TenMonHoc} onChange={(e) => setForm({ ...form, TenMonHoc: e.target.value })} /></Form.Group>
+          <Form.Group className="mb-3"><Form.Label>Tổ hợp</Form.Label><Form.Select value={form.IDToHop} onChange={(e) => setForm({ ...form, IDToHop: e.target.value })}><option value="">-- Chọn tổ hợp (nếu có) --</option>{dsToHop.map(th => (<option key={th.id} value={th.id}>{th.TenToHop}</option>))} </Form.Select></Form.Group>
+          <Form.Group><Form.Label>Niên khóa</Form.Label><Form.Control type="text" value={dsNienKhoa.find(nk => String(nk.id) === selectedNienKhoa)?.TenNienKhoa || ""} disabled /></Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>Hủy</Button>
-          <Button variant="primary" onClick={handleSave}>{editingId ? "Cập nhật" : "Lưu"}</Button>
+          <Button variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>Hủy</Button>
+          <Button variant="primary" onClick={handleSave} disabled={isSubmitting}>{isSubmitting ? <Spinner as="span" size="sm" /> : (editingId ? "Cập nhật" : "Lưu")}</Button>
         </Modal.Footer>
       </Modal>
     </Container>
