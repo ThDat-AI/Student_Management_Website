@@ -30,6 +30,7 @@ const BaoCaoTongKetMon = () => {
 
   // === BƯỚC 1: Tải Niên khóa và Học kỳ trước ===
   useEffect(() => {
+    document.title = "Báo cáo tổng kết môn học";
     const fetchInitialDropdowns = async () => {
       try {
         const [nkRes, hkRes] = await Promise.all([

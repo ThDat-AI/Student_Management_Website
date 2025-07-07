@@ -67,7 +67,7 @@ const BaoCaoTongKetHocKy = () => {
 
   useEffect(() => { fetchDropdowns(); }, []);
   useEffect(() => { fetchBaoCao(); }, [filters]);
-
+  useEffect(() => { document.title = "Báo cáo tổng kết học kỳ"; }, []);
   return (
     <div className="dashboard-container">
       <Container fluid className="px-4 py-4">

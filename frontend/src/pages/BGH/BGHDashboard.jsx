@@ -32,6 +32,7 @@ const BGHDashboard = () => {
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
+    document.title = 'Chào mừng BGH!';
     setPageTitle("Bảng điều khiển (Ban giám hiệu)");
     const fetchStats = async () => {
       try {

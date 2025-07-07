@@ -18,6 +18,7 @@ const DanhSachLop = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
+        document.title = "Xem danh sách lớp";
         setPageTitle("Xem danh sách lớp");
         const fetchNienKhoas = async () => {
             try {

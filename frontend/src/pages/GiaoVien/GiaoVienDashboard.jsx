@@ -11,6 +11,7 @@ const GiaoVienDashboard = () => {
   const { setPageTitle } = useLayout();
 
   useEffect(() => {
+    document.title = "Chào mừng giáo viên!";
     setPageTitle("Bảng điều khiển (Giáo viên)");
   }, [setPageTitle]);
 

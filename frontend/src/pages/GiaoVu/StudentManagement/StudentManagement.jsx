@@ -31,7 +31,7 @@ const StudentManagement = () => {
     const { setPageTitle } = useLayout();
 
     // === EFFECTS ===
-    useEffect(() => { setPageTitle("Quản lý học sinh"); }, [setPageTitle]);
+    useEffect(() => { document.title = "Tiếp nhận học sinh"; setPageTitle("Quản lý học sinh"); }, [setPageTitle]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);

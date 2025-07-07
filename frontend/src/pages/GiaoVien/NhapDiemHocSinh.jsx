@@ -28,6 +28,7 @@ const NhapDiemHocSinh = () => {
   };
 
   useEffect(() => {
+    document.title = "Quản lý điểm";
     setPageTitle("Nhập điểm học sinh");
     fetchDropdowns();
     fetchDiemDatMon();

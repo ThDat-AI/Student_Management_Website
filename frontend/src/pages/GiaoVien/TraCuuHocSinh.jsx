@@ -22,6 +22,7 @@ const TraCuuHocSinh = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
+        document.title = "Tra cứu học sinh";
         setPageTitle("Tra cứu học sinh");
         // Tải danh sách niên khóa lần đầu
         const fetchNienKhoas = async () => {

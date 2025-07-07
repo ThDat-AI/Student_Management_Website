@@ -1,9 +1,15 @@
 // src/pages/Common/Unauthorized.jsx
 import { Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react'; // Thêm dòng này
 
 function Unauthorized() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'Không có quyền truy cập';
+  }, []);
+
 
   return (
     <div className="d-flex vh-100 justify-content-center align-items-center bg-light">

@@ -13,6 +13,7 @@ from students.serializers import HocSinhSerializer
 from students.models import HocSinh
 from subjects.models import MonHoc
 from subjects.serializers import MonHocSerializer
+from grading.models import DiemSo
 
 from configurations.models import ThamSo
 
@@ -77,16 +78,19 @@ class LopHocMonHocUpdateView(views.APIView):
         if not lop_hoc:
             return Response({"detail": "Lớp học không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
 
+
+        if DiemSo.objects.filter(IDLopHoc=lop_hoc).exists():
+            return Response(
+                {"detail": "Không thể thay đổi danh sách môn học vì đã có điểm số được nhập cho lớp này."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = LopHocMonHocUpdateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         monhoc_ids = serializer.validated_data['monhoc_ids']
         nien_khoa_lop_hoc = lop_hoc.IDNienKhoa
-
-        # =================================================================
-        # === LOGIC MỚI: KIỂM TRA SỐ LƯỢNG MÔN HỌC TỐI ĐA ===
-        # =================================================================
         try:
             tham_so = ThamSo.objects.get(IDNienKhoa=nien_khoa_lop_hoc)
             so_mon_hoc_toi_da = tham_so.SoMonHocToiDa
@@ -101,10 +105,6 @@ class LopHocMonHocUpdateView(views.APIView):
                 {"detail": f"Chưa có quy định về số lượng môn học cho niên khóa {nien_khoa_lop_hoc.TenNienKhoa}."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        # =================================================================
-
-        # --- LOGIC CŨ: KIỂM TRA MÔN HỌC CÓ THUỘC ĐÚNG NIÊN KHÓA KHÔNG ---
-        # Vẫn giữ lại logic này để đảm bảo tính hợp lệ của từng môn
         mon_hoc_qs = MonHoc.objects.filter(pk__in=monhoc_ids)
         
         # Kiểm tra nhanh hơn: lấy tất cả niên khóa của các môn được chọn

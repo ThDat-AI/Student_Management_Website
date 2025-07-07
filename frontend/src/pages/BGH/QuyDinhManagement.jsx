@@ -14,6 +14,7 @@ const QuyDinhModal = ({ show, onHide, mode, selectedQuyDinh, latestQuyDinh, onSu
   const [error, setError] = useState("")
   const [validationErrors, setValidationErrors] = useState({})
 
+
   useEffect(() => {
     setError("")
     setValidationErrors({})
@@ -366,7 +367,9 @@ const QuyDinhManagement = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const { setPageTitle } = useLayout()
 
+
   useEffect(() => {
+    document.title = "Quản lý quy định";
     setPageTitle("Quản lý quy định")
   }, [setPageTitle])
 

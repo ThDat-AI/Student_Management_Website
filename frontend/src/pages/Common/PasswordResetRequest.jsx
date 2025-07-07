@@ -1,18 +1,24 @@
 // src/pages/Common/PasswordResetRequest.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { FaEnvelope } from 'react-icons/fa';
 import api from '../../api';
 
 const PasswordResetRequest = () => {
+    useEffect(() => 
+    {
+        document.title = 'Quên mật khẩu';
+    }, []);
+
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
