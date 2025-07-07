@@ -8,6 +8,7 @@ import { useDebounce } from 'use-debounce';
 import { toast } from 'react-toastify';
 import { useLayout } from "../../contexts/LayoutContext";
 
+import confirmDelete from "../../components/ConfirmDelete";
 const QuanLyMonHoc = () => {
   const { setPageTitle } = useLayout();
   const [dsMonHoc, setDsMonHoc] = useState([]);
@@ -86,7 +87,9 @@ const QuanLyMonHoc = () => {
   const handleCloseModal = () => setShowModal(false);
 
   const handleDelete = async (mh) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa môn học "${mh.TenMonHoc}"?`)) {
+    const isConfirmed = await confirmDelete(`Bạn có chắc chắn muốn xóa môn học "${mh.TenMonHoc}"?`);
+    if (!isConfirmed) return;  
+    {
       try {
         await api.delete(`/api/subjects/monhoc/${mh.id}/`);
         toast.success("Xóa môn học thành công!");
