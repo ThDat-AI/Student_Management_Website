@@ -22,6 +22,7 @@ const PasswordResetConfirm = () => {
 
     useEffect(() => {
         // Lấy email từ state được truyền qua navigate
+        document.title = 'Quên mật khẩu';
         const emailFromState = location.state?.email;
         if (emailFromState) {
             setFormData(prev => ({ ...prev, email: emailFromState }));

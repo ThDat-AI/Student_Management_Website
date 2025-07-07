@@ -1,6 +1,6 @@
 // src/pages/Common/Login.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { FaSchool, FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -8,6 +8,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../api';
 
 const Login = () => {
+    useEffect(() => {
+        document.title = 'Đăng nhập hệ thống ';
+    }, []);
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
