@@ -29,6 +29,7 @@ const AccountManagement = () => {
 
     // === EFFECTS ===
     useEffect(() => {
+        document.title = 'Quản lý tài khoản';
         setPageTitle("Quản lý tài khoản");
     }, [setPageTitle]);
 

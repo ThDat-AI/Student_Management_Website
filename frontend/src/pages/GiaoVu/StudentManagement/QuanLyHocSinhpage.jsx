@@ -10,6 +10,7 @@ const QuanLyHocSinhPage = () => {
     const { setPageTitle } = useLayout();
 
     useEffect(() => {
+        document.title = "Quản lý học sinh";
         setPageTitle("Quản lý học sinh");
     }, [setPageTitle]);
 

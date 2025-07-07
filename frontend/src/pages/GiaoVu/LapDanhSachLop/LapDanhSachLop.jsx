@@ -24,6 +24,7 @@ const LapDanhSachLop = () => {
     const [selectedLop, setSelectedLop] = useState(null);
 
     useEffect(() => {
+        document.title = "Quản lý danh sách lớp";
         setPageTitle('Lập danh sách lớp');
         fetchInitialData();
     }, [setPageTitle]);

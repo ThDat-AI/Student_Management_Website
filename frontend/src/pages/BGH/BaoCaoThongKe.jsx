@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { FaChartBar, FaChartLine } from "react-icons/fa";
@@ -6,6 +6,10 @@ import "../../assets/styles/BGHDashboard.css";
 
 const BaoCaoThongKe = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Báo cáo thống kê";
+  }, []);
 
   const reportItems = [
     {

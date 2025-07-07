@@ -9,6 +9,7 @@ const QuanLyDanhSachLopPage = () => {
     const { setPageTitle } = useLayout();
 
     useEffect(() => {
+        document.title = "Quản lý danh sách lớp"
         setPageTitle("Quản lý danh sách lớp");
     }, [setPageTitle]);
 

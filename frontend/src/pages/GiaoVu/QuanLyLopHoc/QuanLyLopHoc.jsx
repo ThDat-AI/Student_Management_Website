@@ -54,6 +54,7 @@ const QuanLyLopHoc = () => {
 
     // Phần fetch dữ liệu không thay đổi
     useEffect(() => {
+        document.title = "Quản lý lớp học";
         setPageTitle("Quản lý lớp học");
         const fetchDropdowns = async () => {
             try {

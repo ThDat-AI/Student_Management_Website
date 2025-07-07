@@ -30,6 +30,7 @@ const QuanLyMonHoc = () => {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
+    document.title = "Quản lý Môn học";
     setPageTitle("Quản lý Môn học");
     const fetchFilters = async () => {
       try {

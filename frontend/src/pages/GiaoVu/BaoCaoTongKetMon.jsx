@@ -30,6 +30,7 @@ const BaoCaoTongKetMon = () => {
 
   // Tải Niên khóa và Học kỳ khi component được mount
   useEffect(() => {
+    document.title = "Báo cáo tổng kết môn học";
     const fetchInitialDropdowns = async () => {
       try {
         const [nkRes, hkRes] = await Promise.all([

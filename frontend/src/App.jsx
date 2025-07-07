@@ -36,7 +36,7 @@ import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
 // CÁC TRANG NHÓM MỚI
 import QuanLyHocSinhPage from "./pages/GiaoVu/StudentManagement/QuanLyHocSinhpage";
-import QuanLyDanhSachLopPage from "./pages/GiaoVu/StudentManagement/QuanLyDanhSachLopPage";
+import QuanLyDanhSachLopPage from "./pages/GiaoVu/LapDanhSachLop/QuanLyDanhSachLopPage";
 // CÁC TRANG CHỨC NĂNG CON
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
 // import TraCuuHocSinhGV from "./pages/GiaoVu/TraCuuHocSinhGV"; // Trang tra cứu của GV
