@@ -1,7 +1,7 @@
 // src/pages/GiaoVu/XemDanhSachLop/DanhSachLop.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Row, Col, Card, Form, Button, Spinner, Alert, Table } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Spinner, Table } from 'react-bootstrap';
 import { FaFileExcel } from 'react-icons/fa';
 import { useLayout } from '../../contexts/LayoutContext';
 import api from '../../api';
@@ -17,9 +17,8 @@ const DanhSachLop = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
-    const [error, setError] = useState('');
+    // const [error, setError] = useState(''); // Đã loại bỏ, thay bằng toast
 
-    // BỔ SUNG: State để lưu thông tin lớp được chọn
     const [selectedLopInfo, setSelectedLopInfo] = useState(null);
 
     useEffect(() => {
@@ -29,7 +28,9 @@ const DanhSachLop = () => {
             try {
                 const res = await api.get('/api/configurations/nienkhoa-list/');
                 setNienKhoaOptions(res.data);
-            } catch (err) { setError("Không thể tải danh sách niên khóa."); }
+            } catch (err) { 
+                toast.error("Không thể tải danh sách niên khóa.");
+            }
         };
         fetchNienKhoas();
     }, [setPageTitle]);
@@ -40,13 +41,17 @@ const DanhSachLop = () => {
                 try {
                     const res = await api.get(`/api/classes/lophoc-list/?nienkhoa_id=${selectedNienKhoa}`);
                     setLopHocOptions(res.data);
-                } catch (err) { setError("Không thể tải danh sách lớp học."); }
+                } catch (err) { 
+                    toast.error("Không thể tải danh sách lớp học.");
+                }
             };
             fetchLopHoc();
-        } else { setLopHocOptions([]); }
+        } else { 
+            setLopHocOptions([]); 
+        }
         setSelectedLopHoc('');
         setStudents([]);
-        setSelectedLopInfo(null); // Reset khi đổi niên khóa
+        setSelectedLopInfo(null);
     }, [selectedNienKhoa]);
 
     const fetchStudents = useCallback(async () => {
@@ -56,17 +61,21 @@ const DanhSachLop = () => {
             return; 
         }
 
-        // BỔ SUNG: Tìm và lưu thông tin lớp học được chọn
         const lopInfo = lopHocOptions.find(lop => lop.id === parseInt(selectedLopHoc));
         setSelectedLopInfo(lopInfo);
         
         setLoading(true);
-        setError('');
         try {
             const res = await api.get(`/api/classes/lophoc/danh-sach-json/?lophoc_id=${selectedLopHoc}`);
             setStudents(res.data);
+            if (res.data.length > 0) {
+                toast.success(`Tải thành công danh sách lớp ${lopInfo?.TenLop}.`);
+            } else {
+                toast.info(`Lớp ${lopInfo?.TenLop} hiện chưa có học sinh.`);
+            }
         } catch (err) {
-            setError("Không thể tải dữ liệu học sinh.");
+            toast.error("Không thể tải dữ liệu học sinh.");
+            setStudents([]); // Xóa dữ liệu cũ nếu có lỗi
         } finally {
             setLoading(false);
         }
@@ -89,7 +98,7 @@ const DanhSachLop = () => {
             saveAs(response.data, filename);
             toast.success("Xuất file thành công!");
         } catch (err) {
-            toast.error("Xuất file thất bại.");
+            toast.error("Xuất file thất bại. Lớp có thể không có dữ liệu để xuất.");
         } finally {
             setIsExporting(false);
         }
@@ -101,7 +110,6 @@ const DanhSachLop = () => {
                 <Card.Header as="h5" className="d-flex justify-content-between align-items-center">
                     <span>
                         Xem Danh Sách Lớp
-                        {/* BỔ SUNG: Hiển thị tên và sĩ số lớp đang xem */}
                         {selectedLopInfo && (
                             <span className='fw-normal fs-6 ms-2'>
                                 - {selectedLopInfo.TenLop} (Sĩ số: {selectedLopInfo.SiSo})
@@ -118,10 +126,11 @@ const DanhSachLop = () => {
                         <Col md={6}><Form.Select value={selectedNienKhoa} onChange={(e) => setSelectedNienKhoa(e.target.value)}><option value="">-- Chọn niên khóa --</option>{nienKhoaOptions.map(nk => <option key={nk.id} value={nk.id}>{nk.TenNienKhoa}</option>)}</Form.Select></Col>
                         <Col md={6}><Form.Select value={selectedLopHoc} onChange={(e) => setSelectedLopHoc(e.target.value)} disabled={!selectedNienKhoa}><option value="">-- Chọn lớp học --</option>{lopHocOptions.map(lop => <option key={lop.id} value={lop.id}>{lop.TenLop}</option>)}</Form.Select></Col>
                     </Row>
-                    {error && <Alert variant="danger">{error}</Alert>}
+                    
+                    {/* Component Alert đã được xóa khỏi đây */}
+
                     <Table striped bordered hover responsive>
                         <thead className="table-light">
-                            {/* THÊM CỘT EMAIL VÀO ĐÂY */}
                             <tr>
                                 <th>STT</th>
                                 <th>Họ và Tên</th>
@@ -132,7 +141,7 @@ const DanhSachLop = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (<tr><td colSpan="6" className="text-center"><Spinner animation="border" /></td></tr>)
+                            {loading ? (<tr><td colSpan="6" className="text-center p-4"><Spinner animation="border" /></td></tr>)
                             : students.length > 0 ? (
                                 students.map((hs, index) => (
                                     <tr key={hs.id}>
@@ -140,13 +149,12 @@ const DanhSachLop = () => {
                                         <td>{`${hs.Ho} ${hs.Ten}`}</td>
                                         <td>{hs.GioiTinh}</td>
                                         <td>{new Date(hs.NgaySinh).toLocaleDateString('vi-VN')}</td>
-                                        {/* THÊM DỮ LIỆU EMAIL VÀO ĐÂY */}
                                         <td>{hs.Email || <span className="text-muted">-</span>}</td>
                                         <td>{hs.DiaChi}</td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="6" className="text-center text-muted">{selectedLopHoc ? 'Lớp không có học sinh.' : 'Vui lòng chọn lớp để xem danh sách.'}</td></tr>
+                                <tr><td colSpan="6" className="text-center text-muted p-4">{selectedLopHoc ? 'Lớp không có học sinh.' : 'Vui lòng chọn lớp để xem danh sách.'}</td></tr>
                             )}
                         </tbody>
                     </Table>

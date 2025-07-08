@@ -23,31 +23,23 @@ import Unauthorized from "./pages/Common/Unauthorized";
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
 import XemDiemSo from "./pages/Common/GiaoVien_GiaoVu_BGH/XemDiemSo";
+import BaoCaoTongKetHocKy from "./pages/Common/GiaoVien_GiaoVu_BGH/BaoCaoTongKetHocKy";
+import BaoCaoTongKetMon from "./pages/Common/GiaoVien_GiaoVu_BGH/BaoCaoTongKetMon";
+import BaoCaoThongKe from "./pages/Common/GiaoVien_GiaoVu_BGH/BaoCaoThongKe";
 
 // BGH pages
 import BGHDashboard from "./pages/BGH/BGHDashboard";
 import AccountManagement from "./pages/BGH/AccountManagement/AccountManagement";
 import QuyDinhManagement from "./pages/BGH/QuyDinhManagement";
-import BaoCaoThongKeBGH from "./pages/BGH/BaoCaoThongKe";
-import BaoCaoTongKetHocKyBGH from "./pages/BGH/BaoCaoTongKetHocKy";
-import BaoCaoTongKetMonBGH from "./pages/BGH/BaoCaoTongKetMon";
 import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
 
 // Giao Vu pages
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
-// CÁC TRANG NHÓM MỚI
 import QuanLyHocSinhPage from "./pages/GiaoVu/StudentManagement/QuanLyHocSinhpage";
 import QuanLyDanhSachLopPage from "./pages/GiaoVu/LapDanhSachLop/QuanLyDanhSachLopPage";
-// CÁC TRANG CHỨC NĂNG CON
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
-// import TraCuuHocSinhGV from "./pages/GiaoVu/TraCuuHocSinhGV"; // Trang tra cứu của GV
 import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
 import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop";
-// import XuatDanhSachLop from "./pages/GiaoVu/XuatDanhSachLop"; // Trang xuất file của GV
-// CÁC TRANG BÁO CÁO
-import BaoCaoThongKeGV from "./pages/GiaoVu/BaoCaoThongKe";
-import BaoCaoTongKetMonGV from "./pages/GiaoVu/BaoCaoTongKetMon";
-import BaoCaoTongKetHocKyGV from "./pages/GiaoVu/BaoCaoTongKetHocKy";
 
 
 // Giao Vien pages
@@ -94,9 +86,9 @@ function App() {
                   <Route path="bgh" element={<BGHDashboard />} />
                   <Route path="bgh/taikhoan" element={<AccountManagement />} />
                   <Route path="bgh/quydinh" element={<QuyDinhManagement />} />
-                  <Route path="bgh/baocao" element={<BaoCaoThongKeBGH />} />
-                  <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKyBGH />} />
-                  <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMonBGH />} />
+                  <Route path="bgh/baocao" element={<BaoCaoThongKe />} />
+                  <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKy />} />
+                  <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMon />} />
                   <Route path="bgh/monhoc" element={<QuanLyMonHoc />} />
                   <Route path="bgh/xem-diem" element={<XemDiemSo />} />
                 </Route>
@@ -119,9 +111,9 @@ function App() {
                   <Route path="giaovu/danh-sach-lop/xuat-danh-sach" element={<DanhSachLop />} />
                   
                   {/* Báo cáo */}
-                  <Route path="giaovu/baocao" element={<BaoCaoThongKeGV />} />
-                  <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
-                  <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
+                  <Route path="giaovu/baocao" element={<BaoCaoThongKe />} />
+                  <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKy />} />
+                  <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMon />} />
 
                   {/* Xem điểm */}
                   <Route path="giaovu/xem-diem" element={<XemDiemSo />} />

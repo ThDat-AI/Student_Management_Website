@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  Container, Row, Col, Form, Button, Table, Spinner, Alert, Card} from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Table, Spinner, Alert, Card } from "react-bootstrap";
 import { FaFileExcel } from "react-icons/fa";
 import { useLayout } from "../../../contexts/LayoutContext";
 import api from "../../../api/index";
+import { toast } from "react-toastify";
 import '../../../assets/styles/GiaoVienDashboard.css'; // Tái sử dụng style
 
 const XemDiemSo = () => {
@@ -13,7 +13,7 @@ const XemDiemSo = () => {
   const [hocSinhData, setHocSinhData] = useState([]);
   const [diemDatMon, setDiemDatMon] = useState(5.0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // const [error, setError] = useState(""); // Đã loại bỏ, thay bằng toast
 
   const { setPageTitle } = useLayout();
 
@@ -54,7 +54,7 @@ const XemDiemSo = () => {
         hocKyList: hk.data || []
       }));
     } catch (err) {
-      setError("Lỗi khi tải dữ liệu dropdown.");
+      toast.error("Lỗi khi tải dữ liệu dropdown.");
     }
   };
 
@@ -63,7 +63,7 @@ const XemDiemSo = () => {
       const res = await api.get(`/api/classes/lophoc-list/?nienkhoa_id=${nienKhoaId}`);
       setDropdowns(prev => ({ ...prev, lopHocList: res.data || [] }));
     } catch (err) {
-      setError("Lỗi khi tải danh sách lớp học.");
+      toast.error("Lỗi khi tải danh sách lớp học.");
     }
   };
   
@@ -72,7 +72,7 @@ const XemDiemSo = () => {
       const res = await api.get(`/api/classes/monhoc-theo-lop/?lop_hoc_id=${lopHocId}`);
       setDropdowns(prev => ({ ...prev, monHocList: res.data || [] }));
     } catch (err) {
-      setError("Lỗi khi tải môn học theo lớp.");
+      toast.error("Lỗi khi tải môn học theo lớp.");
     }
   };
 
@@ -85,34 +85,33 @@ const XemDiemSo = () => {
     }
   };
 
-  // SỬA ĐỔI: useEffect để tự động fetch dữ liệu
   useEffect(() => {
     const { nienKhoa, lopHoc, monHoc, hocKy } = filters;
 
-    // Nếu có đủ 4 bộ lọc thì mới fetch
     if (nienKhoa && lopHoc && monHoc && hocKy) {
         const fetchBangDiem = async () => {
-            setError("");
             setLoading(true);
             try {
                 const res = await api.get("/api/grading/diemso/", {
                     params: { IDNienKhoa: nienKhoa, IDLopHoc: lopHoc, IDMonHoc: monHoc, IDHocKy: hocKy }
                 });
-                setHocSinhData(res.data || []);
-                if (res.data.length === 0) {
-                    setError("Không tìm thấy dữ liệu điểm cho lựa chọn này.");
+                const data = res.data || [];
+                setHocSinhData(data);
+                if (data.length === 0) {
+                    toast.warn("Không tìm thấy dữ liệu điểm cho lựa chọn này.");
+                } else {
+                    toast.success(`Tải thành công bảng điểm của ${data.length} học sinh.`);
                 }
             } catch (err) {
-                setError("Lỗi khi tải bảng điểm: " + (err.response?.data?.detail || err.message));
+                toast.error("Lỗi khi tải bảng điểm: " + (err.response?.data?.detail || err.message));
+                setHocSinhData([]); // Xóa dữ liệu cũ nếu có lỗi
             } finally {
                 setLoading(false);
             }
         };
         fetchBangDiem();
     } else {
-        // Nếu chưa đủ bộ lọc, reset bảng
         setHocSinhData([]);
-        setError(""); // Xóa lỗi cũ
     }
   }, [filters.nienKhoa, filters.lopHoc, filters.monHoc, filters.hocKy]);
 
@@ -139,8 +138,9 @@ const XemDiemSo = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success("Đã bắt đầu tải xuống file Excel.");
     } catch (err) {
-      setError("Lỗi khi xuất Excel: " + (err.response?.data?.detail || "Không có dữ liệu để xuất"));
+      toast.error("Lỗi khi xuất Excel: " + (err.response?.data?.detail || "Không có dữ liệu để xuất"));
     }
   };
 
@@ -166,63 +166,19 @@ const XemDiemSo = () => {
             <Card.Header as="h5">Bộ lọc tra cứu</Card.Header>
             <Card.Body>
                 <Row className="mb-3 g-3">
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label className="fw-bold">Chọn niên khóa</Form.Label>
-                            <Form.Select value={filters.nienKhoa} onChange={(e) => setFilters(prev => ({...prev, nienKhoa: e.target.value}))}>
-                                <option value="">-- Chọn niên khóa --</option>
-                                {dropdowns.nienKhoaList.map(item => (
-                                    <option key={item.id} value={item.id}>{item.TenNienKhoa}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label className="fw-bold">Chọn lớp học</Form.Label>
-                            <Form.Select value={filters.lopHoc} onChange={(e) => setFilters(prev => ({...prev, lopHoc: e.target.value}))} disabled={!filters.nienKhoa}>
-                                <option value="">-- Chọn lớp học --</option>
-                                {dropdowns.lopHocList.map(item => (
-                                    <option key={item.id} value={item.id}>{item.TenLop}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label className="fw-bold">Chọn môn học</Form.Label>
-                            <Form.Select value={filters.monHoc} onChange={(e) => setFilters(prev => ({...prev, monHoc: e.target.value}))} disabled={!filters.lopHoc}>
-                                <option value="">-- Chọn môn học --</option>
-                                {dropdowns.monHocList.map(item => (
-                                    <option key={item.id} value={item.id}>{item.TenMonHoc}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label className="fw-bold">Chọn học kỳ</Form.Label>
-                            <Form.Select value={filters.hocKy} onChange={(e) => setFilters(prev => ({...prev, hocKy: e.target.value}))}>
-                                <option value="">-- Chọn học kỳ --</option>
-                                {dropdowns.hocKyList.map(item => (
-                                    <option key={item.id} value={item.id}>{item.TenHocKy}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
+                    <Col md={3}><Form.Group><Form.Label className="fw-bold">Chọn niên khóa</Form.Label><Form.Select value={filters.nienKhoa} onChange={(e) => setFilters(prev => ({...prev, nienKhoa: e.target.value}))}><option value="">-- Chọn niên khóa --</option>{dropdowns.nienKhoaList.map(item => (<option key={item.id} value={item.id}>{item.TenNienKhoa}</option>))}</Form.Select></Form.Group></Col>
+                    <Col md={3}><Form.Group><Form.Label className="fw-bold">Chọn lớp học</Form.Label><Form.Select value={filters.lopHoc} onChange={(e) => setFilters(prev => ({...prev, lopHoc: e.target.value}))} disabled={!filters.nienKhoa}><option value="">-- Chọn lớp học --</option>{dropdowns.lopHocList.map(item => (<option key={item.id} value={item.id}>{item.TenLop}</option>))}</Form.Select></Form.Group></Col>
+                    <Col md={3}><Form.Group><Form.Label className="fw-bold">Chọn môn học</Form.Label><Form.Select value={filters.monHoc} onChange={(e) => setFilters(prev => ({...prev, monHoc: e.target.value}))} disabled={!filters.lopHoc}><option value="">-- Chọn môn học --</option>{dropdowns.monHocList.map(item => (<option key={item.id} value={item.id}>{item.TenMonHoc}</option>))}</Form.Select></Form.Group></Col>
+                    <Col md={3}><Form.Group><Form.Label className="fw-bold">Chọn học kỳ</Form.Label><Form.Select value={filters.hocKy} onChange={(e) => setFilters(prev => ({...prev, hocKy: e.target.value}))}><option value="">-- Chọn học kỳ --</option>{dropdowns.hocKyList.map(item => (<option key={item.id} value={item.id}>{item.TenHocKy}</option>))}</Form.Select></Form.Group></Col>
                 </Row>
                 <div className="d-flex gap-2">
-                    <Button variant="success" onClick={handleExportExcel} disabled={hocSinhData.length === 0 || loading}>
-                        <FaFileExcel /> Xuất Excel
-                    </Button>
+                    <Button variant="success" onClick={handleExportExcel} disabled={hocSinhData.length === 0 || loading}><FaFileExcel /> Xuất Excel</Button>
                 </div>
             </Card.Body>
         </Card>
 
         {loading ? (
           <div className="text-center my-4"><Spinner animation="border" /></div>
-        ) : error ? (
-            <Alert variant="danger" className="mt-4">{error}</Alert>
         ) : hocSinhData.length > 0 ? (
           <Card className="mt-4">
             <Card.Header as="h5">Kết quả</Card.Header>

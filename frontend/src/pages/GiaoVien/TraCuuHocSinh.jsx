@@ -1,11 +1,12 @@
 // src/pages/HocSinh/TraCuuHocSinh.jsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Container, Row, Col, Card, Form, Table, Spinner, Alert, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Table, Spinner, InputGroup } from 'react-bootstrap';
 import { FaSearch } from 'react-icons/fa';
 import { useLayout } from '../../contexts/LayoutContext';
 import useDebounce from '../../hooks/useDebounce';
 import api from '../../api';
+import { toast } from 'react-toastify';
 
 const TraCuuHocSinh = () => {
     const { setPageTitle } = useLayout();
@@ -25,7 +26,7 @@ const TraCuuHocSinh = () => {
     // State cho dữ liệu và trạng thái
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    // const [error, setError] = useState(''); // Đã loại bỏ, thay bằng toast
 
     useEffect(() => {
         document.title = "Tra cứu học sinh";
@@ -40,7 +41,7 @@ const TraCuuHocSinh = () => {
                 setNienKhoaOptions(nienKhoaRes.data);
                 setKhoiOptions(khoiRes.data);
             } catch (err) {
-                setError("Không thể tải dữ liệu ban đầu.");
+                toast.error("Không thể tải dữ liệu bộ lọc ban đầu.");
             }
         };
         fetchInitialData();
@@ -48,7 +49,6 @@ const TraCuuHocSinh = () => {
 
     // Tải danh sách lớp học khi niên khóa thay đổi
     useEffect(() => {
-        // Reset các bộ lọc phụ
         setSelectedKhoi('');
         setSelectedLopHoc('');
         setAllLopHocOptions([]);
@@ -59,7 +59,7 @@ const TraCuuHocSinh = () => {
                     const res = await api.get(`/api/classes/lophoc-list/?nienkhoa_id=${selectedNienKhoa}`);
                     setAllLopHocOptions(res.data);
                 } catch (err) {
-                    setError("Không thể tải danh sách lớp học.");
+                    toast.error("Không thể tải danh sách lớp học.");
                 }
             };
             fetchLopHoc();
@@ -76,14 +76,12 @@ const TraCuuHocSinh = () => {
 
     // Tải danh sách học sinh khi bộ lọc thay đổi
     const fetchStudents = useCallback(async () => {
-        // Chỉ fetch khi đã chọn niên khóa
         if (!selectedNienKhoa) {
             setStudents([]);
             return;
         }
 
         setLoading(true);
-        setError('');
         try {
             const params = {
                 nien_khoa_id: selectedNienKhoa,
@@ -92,9 +90,21 @@ const TraCuuHocSinh = () => {
                 search: debouncedSearchTerm,
             };
             const res = await api.get('/api/students/tra-cuu/', { params });
-            setStudents(res.data.results || res.data);
+            const results = res.data.results || res.data || [];
+            setStudents(results);
+
+            // Thêm toast thông báo kết quả
+            if (results.length > 0) {
+                toast.success(`Tìm thấy ${results.length} học sinh.`);
+            } else {
+                // Chỉ thông báo khi có các bộ lọc, tránh thông báo lúc đầu
+                if (selectedLopHoc || debouncedSearchTerm) {
+                   toast.info("Không tìm thấy học sinh nào phù hợp.");
+                }
+            }
         } catch (err) {
-            setError("Không thể tải dữ liệu học sinh.");
+            toast.error("Không thể tải dữ liệu học sinh.");
+            setStudents([]); // Xóa dữ liệu cũ khi có lỗi
         } finally {
             setLoading(false);
         }
@@ -118,48 +128,10 @@ const TraCuuHocSinh = () => {
                 <Card.Body>
                     <Row className="mb-3 g-2 align-items-end">
                         {/* BỘ LỌC */}
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label>Niên khóa</Form.Label>
-                                <Form.Select value={selectedNienKhoa} onChange={(e) => setSelectedNienKhoa(e.target.value)}>
-                                    <option value="">-- Chọn niên khóa --</option>
-                                    {nienKhoaOptions.map(nk => <option key={nk.id} value={nk.id}>{nk.TenNienKhoa}</option>)}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={2}>
-                             <Form.Group>
-                                <Form.Label>Khối</Form.Label>
-                                <Form.Select value={selectedKhoi} onChange={(e) => {setSelectedKhoi(e.target.value); setSelectedLopHoc('');}} disabled={!selectedNienKhoa}>
-                                    <option value="">Tất cả khối</option>
-                                    {khoiOptions.map(k => <option key={k.id} value={k.id}>{k.TenKhoi}</option>)}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label>Lớp học</Form.Label>
-                                <Form.Select value={selectedLopHoc} onChange={(e) => setSelectedLopHoc(e.target.value)} disabled={!selectedNienKhoa}>
-                                    <option value="">Tất cả lớp</option>
-                                    {filteredLopOptions.map(lop => <option key={lop.id} value={lop.id}>{lop.TenLop}</option>)}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={4}>
-                            <Form.Group>
-                                <Form.Label>Tìm kiếm học sinh</Form.Label>
-                                <InputGroup>
-                                    <InputGroup.Text><FaSearch /></InputGroup.Text>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Nhập họ tên..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        disabled={!selectedNienKhoa}
-                                    />
-                                </InputGroup>
-                            </Form.Group>
-                        </Col>
+                        <Col md={3}><Form.Group><Form.Label>Niên khóa</Form.Label><Form.Select value={selectedNienKhoa} onChange={(e) => setSelectedNienKhoa(e.target.value)}><option value="">-- Chọn niên khóa --</option>{nienKhoaOptions.map(nk => <option key={nk.id} value={nk.id}>{nk.TenNienKhoa}</option>)}</Form.Select></Form.Group></Col>
+                        <Col md={2}><Form.Group><Form.Label>Khối</Form.Label><Form.Select value={selectedKhoi} onChange={(e) => {setSelectedKhoi(e.target.value); setSelectedLopHoc('');}} disabled={!selectedNienKhoa}><option value="">Tất cả khối</option>{khoiOptions.map(k => <option key={k.id} value={k.id}>{k.TenKhoi}</option>)}</Form.Select></Form.Group></Col>
+                        <Col md={3}><Form.Group><Form.Label>Lớp học</Form.Label><Form.Select value={selectedLopHoc} onChange={(e) => setSelectedLopHoc(e.target.value)} disabled={!selectedNienKhoa}><option value="">Tất cả lớp</option>{filteredLopOptions.map(lop => <option key={lop.id} value={lop.id}>{lop.TenLop}</option>)}</Form.Select></Form.Group></Col>
+                        <Col md={4}><Form.Group><Form.Label>Tìm kiếm học sinh</Form.Label><InputGroup><InputGroup.Text><FaSearch /></InputGroup.Text><Form.Control type="text" placeholder="Nhập họ tên..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={!selectedNienKhoa} /></InputGroup></Form.Group></Col>
                     </Row>
                     
                     {/* BẢNG KẾT QUẢ */}
@@ -179,9 +151,7 @@ const TraCuuHocSinh = () => {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="8" className="text-center"><Spinner animation="border" /></td></tr>
-                                ) : error ? (
-                                    <tr><td colSpan="8"><Alert variant="danger">{error}</Alert></td></tr>
+                                    <tr><td colSpan="8" className="text-center p-4"><Spinner animation="border" /></td></tr>
                                 ) : students.length > 0 ? (
                                     students.map((student, index) => (
                                         <tr key={student.id}>
@@ -197,7 +167,7 @@ const TraCuuHocSinh = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="8" className="text-center text-muted">
+                                        <td colSpan="8" className="text-center text-muted p-4">
                                             {!selectedNienKhoa ? 'Vui lòng chọn niên khóa để bắt đầu tra cứu.' : 'Không tìm thấy học sinh nào phù hợp.'}
                                         </td>
                                     </tr>

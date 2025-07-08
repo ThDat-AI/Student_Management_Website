@@ -1,17 +1,15 @@
 // src/pages/BGH/AccountManagement/components/AccountModal.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Modal, Form, Button, Row, Col, Spinner } from 'react-bootstrap';
 
 const AccountModal = ({ show, onHide, modalType, accountData, roles, onSubmit }) => {
     const isEditMode = modalType === 'edit';
 
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
-        setError('');
         const initialFormState = {
             username: '', password: '', Ho: '', Ten: '', MaVaiTro: '',
             GioiTinh: 'Nam', NgaySinh: '', DiaChi: '', SoDienThoai: '', Email: ''
@@ -43,16 +41,14 @@ const AccountModal = ({ show, onHide, modalType, accountData, roles, onSubmit })
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
 
-        const result = await onSubmit(formData, accountData?.id);
+        // Component cha (AccountManagement) sẽ xử lý kết quả và hiển thị toast
+        await onSubmit(formData, accountData?.id);
         
         setLoading(false);
 
-        if (!result.success) {
-            setError(result.error);
-        }
-        // Nếu thành công, component cha sẽ tự đóng modal
+        // Nếu thành công, component cha sẽ tự đóng modal.
+        // Nếu thất bại, component cha đã hiển thị toast và modal vẫn mở.
     };
 
     return (
@@ -64,10 +60,6 @@ const AccountModal = ({ show, onHide, modalType, accountData, roles, onSubmit })
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {error &&   <Alert variant="danger" dismissible onClose={() => setError('')}>
-                                    <Alert.Heading>Có lỗi xảy ra</Alert.Heading>
-                                    <div style={{ whiteSpace: 'pre-line' }}>{error}</div>
-                                </Alert>}
                     <Row>
                         <Col md={6}>
                             <Form.Group className="mb-3">

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { FaChartBar, FaChartLine } from "react-icons/fa";
-import "../../assets/styles/BGHDashboard.css";
+import "../../../assets/styles/GiaoVuDashboard.css";
 
 const BaoCaoThongKe = () => {
   const navigate = useNavigate();
@@ -10,21 +10,20 @@ const BaoCaoThongKe = () => {
   useEffect(() => {
     document.title = "Báo cáo thống kê";
   }, []);
-
   const reportItems = [
     {
       title: "Báo cáo tổng kết môn học",
       description: "Xem thống kê theo từng môn học, lớp và tỷ lệ đạt.",
       icon: <FaChartBar />,
       color: "primary",
-      path: "/bgh/baocao-monhoc",
+      path: "/giaovu/baocao-monhoc",
     },
     {
       title: "Báo cáo tổng kết học kỳ",
       description: "Tổng hợp kết quả học tập toàn bộ lớp trong học kỳ.",
       icon: <FaChartLine />,
       color: "success",
-      path: "/bgh/baocao-hocky",
+      path: "/giaovu/baocao-hocky",
     },
   ];
 
