@@ -1,8 +1,10 @@
+/* src/pages/GiaoVu/LapDanhSachLop/components/lapDanhSachLop.css */
 .dual-listbox {
     height: 400px; /* Hoặc chiều cao bạn muốn */
     overflow-y: auto;
 }
 
-.dual-listbox .list-group-item {
+/* Thêm vào để con trỏ thay đổi khi di chuột qua hàng của bảng */
+.table-responsive.dual-listbox tbody tr {
     cursor: pointer;
 }

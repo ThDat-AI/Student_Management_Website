@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
-import { FaUsers, FaSchool, FaClipboardList, FaChartBar, FaWpforms, FaCog } from "react-icons/fa";
+import { FaUsers, FaSchool, FaClipboardList, FaChartBar, FaGraduationCap } from "react-icons/fa";
 import { useLayout } from "../../contexts/LayoutContext";
 import '../../assets/styles/GiaoVuDashboard.css';
 
@@ -37,6 +37,13 @@ const GiaoVuDashboard = () => {
       icon: <FaClipboardList />, 
       color: "warning", 
       path: "/giaovu/danh-sach-lop"
+    },
+    { 
+      title: "Tra cứu điểm số", 
+      description: "Xem và xuất bảng điểm chi tiết theo lớp, môn học.", 
+      icon: <FaGraduationCap />, 
+      color: "danger", 
+      path: "/giaovu/xem-diem"
     },
     { 
       title: "Lập báo cáo", 

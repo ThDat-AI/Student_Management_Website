@@ -15,7 +15,7 @@ from configurations.serializers import NienKhoaSerializer
 from classes.models import Khoi
 from classes.serializers import KhoiSerializer
 
-from django.db.models import Avg, Subquery, OuterRef, FloatField
+from django.db.models import Avg, Subquery, OuterRef, FloatField, CharField
 from django.db.models.functions import Round
 from .serializers import HocSinhSerializer, TraCuuHocSinhSerializer
 from grading.models import DiemSo, HocKy
@@ -71,72 +71,75 @@ class KhoiFilterListView(generics.ListAPIView):
 
 class TraCuuHocSinhView(generics.ListAPIView):
     """
-    API cho phép giáo viên tra cứu danh sách học sinh theo Lớp và Niên khóa.
-    Trả về thông tin học sinh kèm điểm trung bình của 2 học kỳ.
+    API tra cứu học sinh toàn diện:
+    - Bắt buộc: `nien_khoa_id`
+    - Tùy chọn: `khoi_id`, `lophoc_id`, `search`
     """
     serializer_class = TraCuuHocSinhSerializer
-    permission_classes = [IsAuthenticated] # Cho phép mọi vai trò đã đăng nhập
+    permission_classes = [IsAuthenticated] # Mọi người dùng đã đăng nhập đều có thể tra cứu
     filter_backends = [filters.SearchFilter]
-    search_fields = ['Ho', 'Ten']
+    search_fields = ['Ho', 'Ten'] # Tìm kiếm theo Họ và Tên
 
     def get_queryset(self):
+        # Lấy các tham số từ query string
+        nien_khoa_id = self.request.query_params.get('nien_khoa_id')
+        khoi_id = self.request.query_params.get('khoi_id')
         lophoc_id = self.request.query_params.get('lophoc_id')
-        
-        # Nếu không có lophoc_id, không trả về gì cả
-        if not lophoc_id:
+
+        # Nếu không có niên khóa, không trả về gì cả. Đây là bộ lọc cơ sở.
+        if not nien_khoa_id:
             return HocSinh.objects.none()
 
-        # Lấy ID của học kỳ 1 và 2 (giả định tên là cố định)
+        # --- Lấy danh sách học sinh thuộc niên khóa ---
+        # Một học sinh thuộc niên khóa nếu em đó được phân vào một lớp trong niên khóa đó.
+        # Dùng .distinct() để tránh trường hợp học sinh bị trùng lặp
+        queryset = HocSinh.objects.filter(
+            lophoc_list__IDNienKhoa_id=nien_khoa_id
+        ).distinct()
+
+        # Lọc theo Khối nếu có
+        if khoi_id:
+            queryset = queryset.filter(lophoc_list__IDKhoi_id=khoi_id)
+
+        # Lọc theo Lớp nếu có
+        if lophoc_id:
+            queryset = queryset.filter(lophoc_list__id=lophoc_id)
+
+        # --- Subquery để lấy thông tin bổ sung ---
         try:
             hk1 = HocKy.objects.get(TenHocKy__icontains="1")
             hk2 = HocKy.objects.get(TenHocKy__icontains="2")
         except HocKy.DoesNotExist:
-            # Nếu không có học kỳ, không thể tính điểm
-            return HocSinh.objects.filter(lophoc_list__id=lophoc_id).order_by('Ten', 'Ho')
+            hk1, hk2 = None, None
 
-        # === XÂY DỰNG CÁC TRUY VẤN CON (SUBQUERY) ĐỂ TÍNH ĐIỂM TRUNG BÌNH ===
+        # Subquery để lấy tên lớp của học sinh TRONG NIÊN KHÓA đang xét
+        ten_lop_subquery = LopHoc.objects.filter(
+            HocSinh=OuterRef('pk'),             # Liên kết với học sinh đang xét
+            IDNienKhoa_id=nien_khoa_id          # Chỉ trong niên khóa này
+        ).values('TenLop')[:1] # Lấy tên lớp đầu tiên tìm thấy
 
-        # Subquery để tính điểm TB của tất cả các môn trong Học Kỳ 1
-        diem_hk1_subquery = DiemSo.objects.filter(
-            IDHocSinh=OuterRef('pk'),         # Liên kết với học sinh đang xét
-            IDLopHoc_id=lophoc_id,            # Chỉ trong lớp học này
-            IDHocKy=hk1                      # Chỉ trong học kỳ 1
-        ).values('IDHocSinh').annotate(
-            # Tính trung bình của cột DiemTB, làm tròn 2 chữ số
-            avg=Round(Avg('DiemTB'), 2)
-        ).values('avg')
-
-        # Subquery cho Học Kỳ 2
-        diem_hk2_subquery = DiemSo.objects.filter(
-            IDHocSinh=OuterRef('pk'),
-            IDLopHoc_id=lophoc_id,
-            IDHocKy=hk2
-        ).values('IDHocSinh').annotate(
-            avg=Round(Avg('DiemTB'), 2)
-        ).values('avg')
+        # Chú thích (annotate) queryset với tên lớp
+        queryset = queryset.annotate(TenLop=Subquery(ten_lop_subquery, output_field=CharField()))
         
-        # Lấy danh sách học sinh thuộc lớp được chọn
-        queryset = HocSinh.objects.filter(lophoc_list__id=lophoc_id)
+        # Annotate điểm nếu có học kỳ
+        if hk1:
+            diem_hk1_subquery = DiemSo.objects.filter(
+                IDHocSinh=OuterRef('pk'),
+                IDLopHoc__IDNienKhoa_id=nien_khoa_id, # Điểm trong niên khóa này
+                IDHocKy=hk1
+            ).values('IDHocSinh').annotate(avg=Round(Avg('DiemTB'), 2)).values('avg')
+            queryset = queryset.annotate(DiemTB_HK1=Subquery(diem_hk1_subquery, output_field=FloatField()))
 
-        # Gắn kết quả của các subquery vào từng học sinh dưới dạng các trường mới
-        queryset = queryset.annotate(
-            DiemTB_HK1=Subquery(diem_hk1_subquery, output_field=FloatField()),
-            DiemTB_HK2=Subquery(diem_hk2_subquery, output_field=FloatField())
-        ).order_by('Ten', 'Ho') # Sắp xếp theo tên
-
-        return queryset
+        if hk2:
+            diem_hk2_subquery = DiemSo.objects.filter(
+                IDHocSinh=OuterRef('pk'),
+                IDLopHoc__IDNienKhoa_id=nien_khoa_id, # Điểm trong niên khóa này
+                IDHocKy=hk2
+            ).values('IDHocSinh').annotate(avg=Round(Avg('DiemTB'), 2)).values('avg')
+            queryset = queryset.annotate(DiemTB_HK2=Subquery(diem_hk2_subquery, output_field=FloatField()))
+            
+        return queryset.order_by('Ten', 'Ho')
 
     def get_serializer_context(self):
-        """
-        Truyền thêm thông tin (context) vào serializer.
-        Ở đây ta truyền tên lớp học để serializer có thể sử dụng.
-        """
-        context = super().get_serializer_context()
-        lophoc_id = self.request.query_params.get('lophoc_id')
-        if lophoc_id:
-            try:
-                lop_hoc = LopHoc.objects.get(pk=lophoc_id)
-                context['lop_hoc_name'] = lop_hoc.TenLop
-            except LopHoc.DoesNotExist:
-                context['lop_hoc_name'] = ''
-        return context
+        # Không cần truyền context tên lớp nữa vì đã annotate trực tiếp
+        return super().get_serializer_context()

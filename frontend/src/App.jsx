@@ -22,6 +22,7 @@ import NotFound from "./pages/Common/NotFound";
 import Unauthorized from "./pages/Common/Unauthorized";
 import PasswordResetRequest from "./pages/Common/PasswordResetRequest";
 import PasswordResetConfirm from "./pages/Common/PasswordResetConfirm";
+import XemDiemSo from "./pages/Common/GiaoVien_GiaoVu_BGH/XemDiemSo";
 
 // BGH pages
 import BGHDashboard from "./pages/BGH/BGHDashboard";
@@ -97,6 +98,7 @@ function App() {
                   <Route path="bgh/baocao-hocky" element={<BaoCaoTongKetHocKyBGH />} />
                   <Route path="bgh/baocao-monhoc" element={<BaoCaoTongKetMonBGH />} />
                   <Route path="bgh/monhoc" element={<QuanLyMonHoc />} />
+                  <Route path="bgh/xem-diem" element={<XemDiemSo />} />
                 </Route>
 
                 {/* Giao Vu Routes - ĐÃ CẤU TRÚC LẠI */}
@@ -120,6 +122,9 @@ function App() {
                   <Route path="giaovu/baocao" element={<BaoCaoThongKeGV />} />
                   <Route path="giaovu/baocao-hocky" element={<BaoCaoTongKetHocKyGV />} />
                   <Route path="giaovu/baocao-monhoc" element={<BaoCaoTongKetMonGV />} />
+
+                  {/* Xem điểm */}
+                  <Route path="giaovu/xem-diem" element={<XemDiemSo />} />
                 </Route>
 
                 {/* Giao Vien Routes */}

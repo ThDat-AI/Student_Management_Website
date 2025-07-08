@@ -237,11 +237,18 @@ class XuatDanhSachHocSinhView(APIView):
         except LopHoc.DoesNotExist:
             return Response({"detail": "Lớp học không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Lấy sĩ số tối đa để hiển thị
+        try:
+            tham_so = ThamSo.objects.get(IDNienKhoa=lop_hoc.IDNienKhoa)
+            siso_toida = tham_so.SiSoToiDa
+        except ThamSo.DoesNotExist:
+            siso_toida = "N/A" # Giá trị mặc định nếu không có quy định
+
         hoc_sinh_list = lop_hoc.HocSinh.all().order_by('Ten', 'Ho')
 
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = f"DS Lớp {lop_hoc.TenLop}"
+        ws.title = f"DS Lop {lop_hoc.TenLop}"
 
         title_font = Font(name='Calibri', size=16, bold=True)
         header_font = Font(name='Calibri', size=12, bold=True)
@@ -255,12 +262,16 @@ class XuatDanhSachHocSinhView(APIView):
         title_cell.font = title_font
         title_cell.alignment = center_alignment
 
-        ws.append([])
+        ws.append([]) # Dòng trống
         ws.append(['Niên khóa:', lop_hoc.IDNienKhoa.TenNienKhoa])
         ws['A3'].font = header_font
         ws.append(['Lớp:', lop_hoc.TenLop])
         ws['A4'].font = header_font
-        ws.append([])
+        
+        # === BỔ SUNG DÒNG SĨ SỐ ===
+        ws.append(['Sĩ số:', f"{lop_hoc.SiSo} / {siso_toida}"])
+        ws['A5'].font = header_font
+        ws.append([]) # Dòng trống
 
         table_headers = ['STT', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ']
         ws.append(table_headers)
@@ -269,40 +280,35 @@ class XuatDanhSachHocSinhView(APIView):
         for cell in ws[header_row_num]:
             cell.font = header_font
             cell.alignment = center_alignment
+            cell.border = thin_border
 
         for index, hs in enumerate(hoc_sinh_list, start=1):
-            ws.append([
+            row_data = [
                 index, f"{hs.Ho} {hs.Ten}", hs.GioiTinh,
                 hs.NgaySinh.strftime('%d/%m/%Y'), hs.Email or '', hs.DiaChi
-            ])
-
-        for row_cells in ws.iter_rows(min_row=header_row_num, max_row=ws.max_row):
-            for cell in row_cells:
+            ]
+            ws.append(row_data)
+            # Áp dụng border và căn lề cho dòng dữ liệu
+            for cell in ws[ws.max_row]:
                 cell.border = thin_border
+                if cell.column == 1: # Cột STT
+                    cell.alignment = center_alignment
+                else:
+                    cell.alignment = left_alignment
         
-        # === SỬA LỖI VÒNG LẶP ĐIỀU CHỈNH ĐỘ RỘNG CỘT ===
-        # Lặp qua chỉ số cột thay vì đối tượng cột
         for col_index in range(1, len(table_headers) + 1):
-            # Lấy ký tự cột từ chỉ số (1 -> 'A', 2 -> 'B')
             column_letter = get_column_letter(col_index)
             max_length = 0
-            # Lặp qua các ô trong cột đó
             for cell in ws[column_letter]:
-                # Căn lề trái cho các ô dữ liệu (không phải tiêu đề và cột STT)
-                if cell.row > header_row_num and cell.column > 1:
-                     cell.alignment = left_alignment
                 try:
-                    # Kiểm tra giá trị của ô để tìm độ dài lớn nhất
                     if cell.value:
                         if len(str(cell.value)) > max_length:
                             max_length = len(str(cell.value))
                 except:
                     pass
-            # Điều chỉnh độ rộng cột
             adjusted_width = (max_length + 2)
             ws.column_dimensions[column_letter].width = adjusted_width
 
-        # --- TRẢ VỀ RESPONSE ---
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         filename = f"Danh_sach_lop_{lop_hoc.TenLop}_{lop_hoc.IDNienKhoa.TenNienKhoa}.xlsx"
         response['Content-Disposition'] = f'attachment; filename*="UTF-8\'\'{filename}"' 

@@ -1,3 +1,5 @@
+// src/pages/GiaoVu/XemDanhSachLop/DanhSachLop.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Form, Button, Spinner, Alert, Table } from 'react-bootstrap';
 import { FaFileExcel } from 'react-icons/fa';
@@ -16,6 +18,9 @@ const DanhSachLop = () => {
     const [loading, setLoading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [error, setError] = useState('');
+
+    // BỔ SUNG: State để lưu thông tin lớp được chọn
+    const [selectedLopInfo, setSelectedLopInfo] = useState(null);
 
     useEffect(() => {
         document.title = "Xem danh sách lớp";
@@ -41,10 +46,20 @@ const DanhSachLop = () => {
         } else { setLopHocOptions([]); }
         setSelectedLopHoc('');
         setStudents([]);
+        setSelectedLopInfo(null); // Reset khi đổi niên khóa
     }, [selectedNienKhoa]);
 
     const fetchStudents = useCallback(async () => {
-        if (!selectedLopHoc) { setStudents([]); return; }
+        if (!selectedLopHoc) { 
+            setStudents([]); 
+            setSelectedLopInfo(null);
+            return; 
+        }
+
+        // BỔ SUNG: Tìm và lưu thông tin lớp học được chọn
+        const lopInfo = lopHocOptions.find(lop => lop.id === parseInt(selectedLopHoc));
+        setSelectedLopInfo(lopInfo);
+        
         setLoading(true);
         setError('');
         try {
@@ -55,7 +70,7 @@ const DanhSachLop = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedLopHoc]);
+    }, [selectedLopHoc, lopHocOptions]);
 
     useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
@@ -84,7 +99,15 @@ const DanhSachLop = () => {
         <Container fluid>
             <Card className="mt-4">
                 <Card.Header as="h5" className="d-flex justify-content-between align-items-center">
-                    Xem Danh Sách Lớp
+                    <span>
+                        Xem Danh Sách Lớp
+                        {/* BỔ SUNG: Hiển thị tên và sĩ số lớp đang xem */}
+                        {selectedLopInfo && (
+                            <span className='fw-normal fs-6 ms-2'>
+                                - {selectedLopInfo.TenLop} (Sĩ số: {selectedLopInfo.SiSo})
+                            </span>
+                        )}
+                    </span>
                     <Button variant="success" onClick={handleExport} disabled={!selectedLopHoc || isExporting || students.length === 0}>
                         {isExporting ? <Spinner as="span" animation="border" size="sm" /> : <FaFileExcel />}
                         <span className="ms-2">{isExporting ? 'Đang xuất...' : 'Xuất Excel'}</span>
@@ -99,7 +122,14 @@ const DanhSachLop = () => {
                     <Table striped bordered hover responsive>
                         <thead className="table-light">
                             {/* THÊM CỘT EMAIL VÀO ĐÂY */}
-                            <tr><th>STT</th><th>Họ và Tên</th><th>Giới tính</th><th>Ngày sinh</th><th>Email</th><th>Địa chỉ</th></tr>
+                            <tr>
+                                <th>STT</th>
+                                <th>Họ và Tên</th>
+                                <th>Giới tính</th>
+                                <th>Ngày sinh</th>
+                                <th>Email</th>
+                                <th>Địa chỉ</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {loading ? (<tr><td colSpan="6" className="text-center"><Spinner animation="border" /></td></tr>)

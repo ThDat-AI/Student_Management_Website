@@ -71,20 +71,26 @@ class HocSinhSerializer(serializers.ModelSerializer):
 class TraCuuHocSinhSerializer(serializers.ModelSerializer):
     """
     Serializer để hiển thị thông tin tra cứu của học sinh,
-    bao gồm điểm trung bình các học kỳ được tính toán từ view.
+    bao gồm các trường được tính toán từ view.
     """
     HoTen = serializers.SerializerMethodField(read_only=True)
-    TenLop = serializers.SerializerMethodField(read_only=True)
-    
     # Các trường này sẽ được cung cấp bởi `annotate` trong view
-    DiemTB_HK1 = serializers.FloatField(read_only=True)
-    DiemTB_HK2 = serializers.FloatField(read_only=True)
+    TenLop = serializers.CharField(read_only=True, default=None)
+    DiemTB_HK1 = serializers.FloatField(read_only=True, default=None)
+    DiemTB_HK2 = serializers.FloatField(read_only=True, default=None)
+    
+    # Định dạng lại ngày sinh để hiển thị
+    NgaySinh = serializers.DateField(format="%d/%m/%Y")
 
     class Meta:
         model = HocSinh
+        # Bổ sung các trường cần thiết
         fields = [
             'id',
             'HoTen',
+            'GioiTinh',
+            'NgaySinh',
+            'Email',
             'TenLop',
             'DiemTB_HK1',
             'DiemTB_HK2',
@@ -92,7 +98,3 @@ class TraCuuHocSinhSerializer(serializers.ModelSerializer):
 
     def get_HoTen(self, obj):
         return f"{obj.Ho} {obj.Ten}"
-
-    def get_TenLop(self, obj):
-        # Lấy tên lớp từ context được truyền vào từ view
-        return self.context.get('lop_hoc_name', '')

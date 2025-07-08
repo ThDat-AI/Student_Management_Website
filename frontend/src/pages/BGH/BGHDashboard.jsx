@@ -1,8 +1,8 @@
 // BGHDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Row, Col, Card, Button, Spinner } from "react-bootstrap";
-import { FaUsers, FaChartBar, FaCog, FaUserFriends, FaChalkboardTeacher, FaUserShield, FaUserTie,FaBookOpen } from "react-icons/fa";
+import { Container, Row, Col, Card, Button, Spinner} from "react-bootstrap";
+import { FaUsers, FaChartBar, FaCog, FaUserFriends, FaChalkboardTeacher, FaUserShield, FaUserTie, FaBookOpen, FaGraduationCap} from "react-icons/fa";
 import { useLayout } from "../../contexts/LayoutContext";
 import api from "../../api";
 import '../../assets/styles/BGHDashboard.css'; // Import a CSS file
@@ -51,13 +51,9 @@ const BGHDashboard = () => {
     { title: "Quản lý tài khoản", description: "Tạo, sửa, xóa các tài khoản trong hệ thống.", icon: <FaUsers />, color: "primary", path: "/bgh/taikhoan" },
     { title: "Báo cáo & Thống kê", description: "Xem các báo cáo tổng quan về học tập và hệ thống.", icon: <FaChartBar />, color: "success", path: "/bgh/baocao" },
     { title: "Cài đặt hệ thống", description: "Cấu hình các thông số chung của năm học, quy định.", icon: <FaCog />, color: "warning", path: "/bgh/quydinh" },
-    { 
-  title: "Quản lý môn học", 
-  description: "Thêm, sửa, xóa và thống kê các môn học trong chương trình.", 
-  icon: <FaBookOpen />, 
-  color: "info", 
-  path: "/bgh/monhoc" 
-},
+    { title: "Quản lý môn học", description: "Thêm, sửa, xóa và thống kê các môn học trong chương trình.", icon: <FaBookOpen />, color: "info", path: "/bgh/monhoc" },
+    { title: "Tra cứu điểm số", description: "Xem và xuất bảng điểm chi tiết theo lớp, môn học.", icon: <FaGraduationCap />, color: "danger", path: "/bgh/xem-diem"},
+
   ];
 
   const quickStats = [

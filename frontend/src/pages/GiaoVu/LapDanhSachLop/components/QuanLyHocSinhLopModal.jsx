@@ -1,9 +1,75 @@
+// src/pages/GiaoVu/LapDanhSachLop/components/QuanLyHocSinhLopModal.jsx
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Modal, Button, Row, Col, ListGroup, Card, Spinner, Alert, Badge, Container, Form, InputGroup } from 'react-bootstrap';
+import { Modal, Button, Row, Col, Table, Card, Spinner, Alert, Badge, Container, Form, InputGroup } from 'react-bootstrap';
 import { FaArrowLeft, FaArrowRight, FaSearch } from 'react-icons/fa';
 import api from '../../../../api/index';
 import { toast } from 'react-toastify';
-import './lapDanhSachLop.css';
+import './LapDanhSachLop.css';
+
+// Component con để hiển thị bảng học sinh
+const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onDoubleClick, searchTerm, setSearchTerm }) => {
+    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('vi-VN');
+
+    return (
+        <Card className="h-100 d-flex flex-column">
+            <Card.Header>{title} ({students.length})</Card.Header>
+            <div className="p-2 border-bottom">
+                <InputGroup size="sm">
+                    <InputGroup.Text><FaSearch /></InputGroup.Text>
+                    <Form.Control 
+                        placeholder="Tìm theo tên..." 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                    />
+                </InputGroup>
+            </div>
+            <div className="table-responsive dual-listbox flex-grow-1"> 
+                <Table striped hover size="sm" className="mb-0">
+                    <thead>
+                        <tr>
+                            <th>
+                                <Form.Check 
+                                    type="checkbox"
+                                    onChange={onSelectAll}
+                                    checked={students.length > 0 && selectedIds.length === students.length}
+                                    disabled={students.length === 0}
+                                />
+                            </th>
+                            <th>Họ và Tên</th>
+                            <th>Giới tính</th>
+                            <th>Ngày sinh</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {students.length > 0 ? students.map(student => (
+                            <tr key={student.id} onDoubleClick={() => onDoubleClick(student)} style={{cursor: 'pointer'}}>
+                                <td>
+                                    <Form.Check 
+                                        type="checkbox"
+                                        checked={selectedIds.includes(student.id)}
+                                        onChange={() => onSelect(student)}
+                                    />
+                                </td>
+                                <td>{`${student.Ho} ${student.Ten}`}</td>
+                                <td>{student.GioiTinh}</td>
+                                <td>{formatDate(student.NgaySinh)}</td>
+                                <td>{student.Email || '-'}</td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                {/* Cập nhật colspan thành 5 */}
+                                <td colSpan="5" className="text-center text-muted">Không có học sinh</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </Table>
+            </div>
+        </Card>
+    );
+};
+
 
 const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) => {
     const [loading, setLoading] = useState(false);
@@ -40,6 +106,7 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
         if (show) {
             fetchData();
         } else {
+            setLopHocInfo(null);
             setStudentsInClass([]);
             setAvailableStudents([]);
             setSelectedInClass([]);
@@ -74,6 +141,22 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
             setSelectedList([...selectedList, studentId]);
         }
     };
+    
+    const handleSelectAll = (listType) => {
+        if (listType === 'inClass') {
+            if (selectedInClass.length === filteredStudentsInClass.length) {
+                setSelectedInClass([]);
+            } else {
+                setSelectedInClass(filteredStudentsInClass.map(s => s.id));
+            }
+        } else {
+            if (selectedAvailable.length === filteredAvailableStudents.length) {
+                setSelectedAvailable([]);
+            } else {
+                setSelectedAvailable(filteredAvailableStudents.map(s => s.id));
+            }
+        }
+    };
 
     const handleAdd = () => {
         const toMove = availableStudents.filter(s => selectedAvailable.includes(s.id));
@@ -90,6 +173,10 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
     };
 
     const handleDoubleClickAdd = (studentToAdd) => {
+        if (studentsInClass.length >= siSoToiDa) {
+            toast.warn(`Sĩ số đã đạt tối đa (${siSoToiDa}).`);
+            return;
+        }
         setAvailableStudents(prev => prev.filter(s => s.id !== studentToAdd.id));
         setStudentsInClass(prev => [...prev, studentToAdd].sort((a, b) => a.Ten.localeCompare(b.Ten)));
     };
@@ -119,81 +206,52 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
     const isOverCapacity = studentsInClass.length > siSoToiDa;
 
     return (
-        <Modal show={show} onHide={handleClose} size="xl" centered backdrop="static">
+        <Modal show={show} onHide={handleClose} fullscreen={true} centered backdrop="static">
             <Modal.Header closeButton>
-                <Modal.Title>
-                    Quản lý danh sách lớp: {lopHocInfo?.TenLop} ({lopHocInfo?.TenNienKhoa})
+                <Modal.Title className="d-flex align-items-center">
+                    Quản lý danh sách lớp: {lopHocInfo?.TenLop}
+                    {siSoToiDa > 0 && 
+                        <Badge bg={isOverCapacity ? 'danger' : 'primary'} className="ms-3 fs-6">
+                            Sĩ số: {studentsInClass.length} / {siSoToiDa}
+                        </Badge>
+                    }
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {loading && <div className="text-center my-5"><Spinner animation="border" /></div>}
                 {error && <Alert variant="danger">{error}</Alert>}
                 {!loading && !error && (
-                    <Container fluid>
-                        <Row>
+                    <Container fluid className="h-100">
+                        <Row className="h-100">
                             <Col>
-                                <Card>
-                                    <Card.Header className="d-flex justify-content-between align-items-center">
-                                        <span>Học sinh trong lớp ({studentsInClass.length})</span>
-                                        <Badge bg={isOverCapacity ? 'danger' : 'primary'} className="ms-2">
-                                            Sĩ số: {studentsInClass.length} / {siSoToiDa}
-                                        </Badge>
-                                    </Card.Header>
-                                    <div className="p-2 border-bottom">
-                                        <InputGroup size="sm">
-                                            <InputGroup.Text><FaSearch /></InputGroup.Text>
-                                            <Form.Control placeholder="Tìm trong lớp..." value={searchInClass} onChange={e => setSearchInClass(e.target.value)} />
-                                        </InputGroup>
-                                    </div>
-                                    <ListGroup variant="flush" className="dual-listbox">
-                                        {filteredStudentsInClass.length > 0 ? filteredStudentsInClass.map(student => (
-                                            <ListGroup.Item 
-                                                key={student.id} 
-                                                action 
-                                                active={selectedInClass.includes(student.id)}
-                                                onClick={() => handleSelect(student, 'inClass')}
-                                                onDoubleClick={() => handleDoubleClickRemove(student)}
-                                            >
-                                                {student.Ho} {student.Ten} <span className='text-muted'>({student.NgaySinh})</span>
-                                            </ListGroup.Item>
-                                        )) : (
-                                            <ListGroup.Item className='text-center text-muted'>Không có học sinh nào</ListGroup.Item>
-                                        )}
-                                    </ListGroup>
-                                </Card>
+                                <StudentTable
+                                    title="Học sinh trong lớp"
+                                    students={filteredStudentsInClass}
+                                    selectedIds={selectedInClass}
+                                    onSelect={(student) => handleSelect(student, 'inClass')}
+                                    onSelectAll={() => handleSelectAll('inClass')}
+                                    onDoubleClick={handleDoubleClickRemove}
+                                    searchTerm={searchInClass}
+                                    setSearchTerm={setSearchInClass}
+                                />
                             </Col>
 
                             <Col xs="auto" className="d-flex flex-column justify-content-center align-items-center px-2">
-                                <Button variant="light" className="mb-2 border" onClick={handleAdd} disabled={selectedAvailable.length === 0} title="Thêm vào lớp"> <FaArrowLeft /> </Button>
+                                <Button variant="light" className="mb-2 border" onClick={handleAdd} disabled={selectedAvailable.length === 0 || isOverCapacity} title="Thêm vào lớp"> <FaArrowLeft /> </Button>
                                 <Button variant="light" className="border" onClick={handleRemove} disabled={selectedInClass.length === 0} title="Xóa khỏi lớp"> <FaArrowRight /> </Button>
                             </Col>
 
                             <Col>
-                                <Card>
-                                    <Card.Header>Học sinh đủ điều kiện ({availableStudents.length})</Card.Header>
-                                    <div className="p-2 border-bottom">
-                                        <InputGroup size="sm">
-                                            {/* SỬA LỖI Ở DÒNG DƯỚI ĐÂY */}
-                                            <InputGroup.Text><FaSearch /></InputGroup.Text>
-                                            <Form.Control placeholder="Tìm học sinh đủ điều kiện..." value={searchAvailable} onChange={e => setSearchAvailable(e.target.value)} />
-                                        </InputGroup>
-                                    </div>
-                                    <ListGroup variant="flush" className="dual-listbox">
-                                         {filteredAvailableStudents.length > 0 ? filteredAvailableStudents.map(student => (
-                                            <ListGroup.Item 
-                                                key={student.id} 
-                                                action
-                                                active={selectedAvailable.includes(student.id)}
-                                                onClick={() => handleSelect(student, 'available')}
-                                                onDoubleClick={() => handleDoubleClickAdd(student)}
-                                            >
-                                                {student.Ho} {student.Ten} <span className='text-muted'>({student.NgaySinh})</span>
-                                            </ListGroup.Item>
-                                        )) : (
-                                             <ListGroup.Item className='text-center text-muted'>Không có học sinh nào</ListGroup.Item>
-                                        )}
-                                    </ListGroup>
-                                </Card>
+                                <StudentTable
+                                    title="Học sinh đủ điều kiện"
+                                    students={filteredAvailableStudents}
+                                    selectedIds={selectedAvailable}
+                                    onSelect={(student) => handleSelect(student, 'available')}
+                                    onSelectAll={() => handleSelectAll('available')}
+                                    onDoubleClick={handleDoubleClickAdd}
+                                    searchTerm={searchAvailable}
+                                    setSearchTerm={setSearchAvailable}
+                                />
                             </Col>
                         </Row>
                     </Container>
