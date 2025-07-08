@@ -59,3 +59,19 @@ class CreateQuyDinhVaNienKhoaSerializer(serializers.ModelSerializer):
         nien_khoa = NienKhoa.objects.create(TenNienKhoa=ten_nien_khoa)
         thamso = ThamSo.objects.create(IDNienKhoa=nien_khoa, **validated_data)
         return thamso
+    
+class GiaoVuUpdateThamSoSerializer(serializers.ModelSerializer):
+    """
+    Serializer này giới hạn quyền của Giáo vụ,
+    chỉ cho phép cập nhật 2 trường về quyền sửa điểm.
+    """
+    TenNienKhoa = serializers.CharField(source='IDNienKhoa.TenNienKhoa', read_only=True)
+    
+    class Meta:
+        model = ThamSo
+        # Chỉ liệt kê các trường được phép sửa
+        fields = [
+            'IDNienKhoa', 'TenNienKhoa', 'ChoPhepSuaDiemHK1', 'ChoPhepSuaDiemHK2'
+        ]
+        # Các trường khác sẽ không được gửi đi trong request update
+        read_only_fields = ['IDNienKhoa', 'TenNienKhoa']

@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 
@@ -15,6 +16,9 @@ from grading.serializers import DiemSoSerializer, HocKySerializer, HocSinhDiemSe
 from students.models import HocSinh
 from classes.models import LopHoc_HocSinh, LopHoc_MonHoc
 from configurations.models import ThamSo
+
+from classes.models import LopHoc
+from configurations.models import  NienKhoa
 
 
 # ====== HÀM: Tự động giãn cột Excel ======
@@ -37,19 +41,29 @@ class DiemSoListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # ✅ Lấy IDNienKhoa từ query params, nó có thể có hoặc không
         IDNienKhoa = request.query_params.get('IDNienKhoa')
         IDLopHoc = request.query_params.get('IDLopHoc')
         IDMonHoc = request.query_params.get('IDMonHoc')
         IDHocKy = request.query_params.get('IDHocKy')
 
-        if not all([IDNienKhoa, IDLopHoc, IDMonHoc, IDHocKy]):
-            return Response({"detail": "Thiếu tham số"}, status=400)
-
+        if not all([IDLopHoc, IDMonHoc, IDHocKy]):
+            return Response({"detail": "Thiếu tham số Lớp học, Môn học hoặc Học kỳ."}, status=400)
+        
+        # ✅ Nếu không có IDNienKhoa được cung cấp, tự động lấy niên khóa mới nhất
+        if not IDNienKhoa:
+            latest_nien_khoa = NienKhoa.objects.order_by('-TenNienKhoa').first()
+            if not latest_nien_khoa:
+                return Response({"detail": "Hệ thống chưa có niên khóa nào."}, status=400)
+            IDNienKhoa = latest_nien_khoa.id
+        
+        # Logic kiểm tra môn học thuộc lớp
         if not LopHoc_MonHoc.objects.filter(IDLopHoc_id=IDLopHoc, IDMonHoc_id=IDMonHoc).exists():
             return Response({"detail": "Môn học không thuộc lớp học này"}, status=400)
 
+        # Lọc học sinh theo IDLopHoc và IDNienKhoa đã xác định
         hoc_sinh_ids = LopHoc_HocSinh.objects.filter(IDLopHoc_id=IDLopHoc).values_list("IDHocSinh_id", flat=True)
-        hoc_sinh_list = HocSinh.objects.filter(id__in=hoc_sinh_ids, IDNienKhoaTiepNhan=IDNienKhoa)
+        hoc_sinh_list = HocSinh.objects.filter(id__in=hoc_sinh_ids, IDNienKhoaTiepNhan_id=IDNienKhoa)
 
         serializer = HocSinhDiemSerializer(
             hoc_sinh_list,
@@ -73,6 +87,27 @@ def cap_nhat_diem(request):
         if f not in data:
             return Response({f: 'Trường này bắt buộc'}, status=400)
 
+    # ✅ === LOGIC KIỂM TRA QUYỀN SỬA ĐIỂM ===
+    try:
+        lop_hoc = LopHoc.objects.select_related('IDNienKhoa__thamso').get(pk=data['IDLopHoc'])
+        thamso = lop_hoc.IDNienKhoa.thamso
+        id_hoc_ky = int(data['IDHocKy'])
+
+        # Giả định ID Học kỳ 1 là 1, Học kỳ 2 là 2
+        if id_hoc_ky == 1 and not thamso.ChoPhepSuaDiemHK1:
+            raise PermissionDenied("Hệ thống đã khóa chức năng nhập/sửa điểm cho Học kỳ 1.")
+        elif id_hoc_ky == 2 and not thamso.ChoPhepSuaDiemHK2:
+            raise PermissionDenied("Hệ thống đã khóa chức năng nhập/sửa điểm cho Học kỳ 2.")
+
+    except (LopHoc.DoesNotExist, ThamSo.DoesNotExist):
+        # Nếu không tìm thấy tham số, cho phép sửa để tránh chặn oan
+        pass 
+    except PermissionDenied as e:
+        # Bắt lỗi và trả về cho client
+        return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    # ✅ === KẾT THÚC LOGIC KIỂM TRA ===
+
+
     diem15 = data.get('Diem15')
     diem1tiet = data.get('Diem1Tiet')
 
@@ -89,6 +124,7 @@ def cap_nhat_diem(request):
     obj.Diem15 = diem15
     obj.Diem1Tiet = diem1tiet
 
+    # ... (phần còn lại của hàm giữ nguyên)
     if diem15 is not None and diem1tiet is not None:
         try:
             obj.DiemTB = round((float(diem15) + 2 * float(diem1tiet)) / 3, 2)

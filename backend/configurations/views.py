@@ -2,11 +2,11 @@
 
 from rest_framework import generics, views, status, filters
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.permissions import IsAuthenticated
-from accounts.permissions import IsBGH, IsGiaoVu, IsGiaoVien
+from accounts.permissions import IsBGH, IsGiaoVu
 from .models import NienKhoa, ThamSo
-from .serializers import ThamSoSerializer, CreateQuyDinhVaNienKhoaSerializer, NienKhoaSerializer
+from .serializers import ThamSoSerializer, CreateQuyDinhVaNienKhoaSerializer, NienKhoaSerializer, GiaoVuUpdateThamSoSerializer
 from students.models import HocSinh
 from classes.models import LopHoc
 from .serializers import CreateQuyDinhVaNienKhoaSerializer
@@ -14,6 +14,7 @@ from .serializers import CreateQuyDinhVaNienKhoaSerializer
 class TaoNienKhoaVaThamSoView(generics.CreateAPIView):
     queryset = ThamSo.objects.all()
     serializer_class = CreateQuyDinhVaNienKhoaSerializer
+    pagination_class = [IsAuthenticated, IsBGH]
 
 class ListCreateQuyDinhView(generics.ListCreateAPIView):
     # Sắp xếp mặc định theo TenNienKhoa giảm dần
@@ -29,11 +30,53 @@ class ListCreateQuyDinhView(generics.ListCreateAPIView):
             return CreateQuyDinhVaNienKhoaSerializer
         return ThamSoSerializer
 
+class LatestQuyDinhSettingsView(generics.RetrieveUpdateAPIView):
+    """
+    API này chỉ làm việc với quy định (ThamSo) của niên khóa MỚI NHẤT.
+    - GET: Lấy thông tin cài đặt hiện tại.
+    - PATCH/PUT: Cập nhật cài đặt.
+    Dành cho Giáo vụ và BGH.
+    """
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu]
+
+    def get_object(self):
+        # Luôn tìm đối tượng ThamSo của niên khóa mới nhất
+        latest_thamso = ThamSo.objects.order_by('-IDNienKhoa__TenNienKhoa').first()
+        if not latest_thamso:
+            raise NotFound("Không tìm thấy quy định nào trong hệ thống.")
+        return latest_thamso
+
+    def get_serializer_class(self):
+        user = self.request.user
+        # Khi Giáo vụ cập nhật, chỉ dùng serializer giới hạn quyền
+        if self.request.method in ['PUT', 'PATCH'] and hasattr(user, 'taikhoan') and user.taikhoan.MaVaiTro.MaVaiTro == 'GiaoVu':
+            return GiaoVuUpdateThamSoSerializer
+        # Mặc định (GET) hoặc khi BGH sửa, dùng serializer đầy đủ
+        return ThamSoSerializer
+    
+
+    
 class QuyDinhDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ThamSo.objects.select_related('IDNienKhoa').all()
     serializer_class = ThamSoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu]
     lookup_field = 'IDNienKhoa'
+
+    def get_serializer_class(self):
+        """
+        Trả về serializer phù hợp với vai trò của người dùng.
+        - BGH: Có toàn quyền sửa (ThamSoSerializer).
+        - Giáo Vụ: Chỉ có quyền sửa các trường cho phép (GiaoVuUpdateThamSoSerializer).
+        """
+        user = self.request.user
+        # Mặc định dùng serializer đầy đủ cho BGH (hoặc khi xem GET)
+        serializer = ThamSoSerializer
+        
+        # Nếu là request UPDATE/PATCH và người dùng là Giáo Vụ
+        if self.request.method in ['PUT', 'PATCH'] and hasattr(user, 'taikhoan') and user.taikhoan.MaVaiTro.MaVaiTro == 'GiaoVu':
+            return GiaoVuUpdateThamSoSerializer
+        
+        return ThamSoSerializer
 
     def _check_related_data(self, nien_khoa_id):
         has_students = HocSinh.objects.filter(IDNienKhoaTiepNhan_id=nien_khoa_id).exists()
@@ -41,11 +84,19 @@ class QuyDinhDetailView(generics.RetrieveUpdateDestroyAPIView):
         return has_students or has_classes
 
     def perform_update(self, serializer):
-        if self._check_related_data(self.kwargs['IDNienKhoa']):
-            raise ValidationError("Không thể sửa quy định vì đã có dữ liệu (học sinh, lớp học,...) trong niên khóa này.")
+        # ✅ BGH mới được sửa khi đã có dữ liệu liên quan
+        user_role = self.request.user.taikhoan.MaVaiTro.MaVaiTro
+        if user_role == 'BGH':
+             if self._check_related_data(self.kwargs['IDNienKhoa']):
+                raise ValidationError("Không thể sửa quy định vì đã có dữ liệu (học sinh, lớp học,...) trong niên khóa này.")
+        
+        # Giáo vụ vẫn có thể sửa quyền nhập điểm dù đã có dữ liệu
         super().perform_update(serializer)
 
     def perform_destroy(self, instance):
+        # Chỉ BGH mới có quyền xóa
+        if not self.request.user.taikhoan.MaVaiTro.MaVaiTro == 'BGH':
+             raise ValidationError("Chỉ Ban Giám Hiệu mới có quyền xóa quy định.")
         if self._check_related_data(instance.IDNienKhoa_id):
             raise ValidationError("Không thể xóa quy định vì đã có dữ liệu (học sinh, lớp học,...) trong niên khóa này.")
         nien_khoa = instance.IDNienKhoa
@@ -53,9 +104,11 @@ class QuyDinhDetailView(generics.RetrieveUpdateDestroyAPIView):
         nien_khoa.delete()
 
 class LatestQuyDinhView(views.APIView):
-    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu | IsGiaoVien]
+    """API này cung cấp thông tin đọc của quy định mới nhất cho toàn hệ thống."""
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
-        latest_thamso = ThamSo.objects.order_by('-IDNienKhoa__TenNienKhoa').first()
+        latest_thamso = ThamSo.objects.select_related('IDNienKhoa').order_by('-IDNienKhoa__TenNienKhoa').first()
         if not latest_thamso:
             return Response({}, status=status.HTTP_200_OK)
         serializer = ThamSoSerializer(latest_thamso)

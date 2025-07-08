@@ -6,6 +6,7 @@ from .views import TaoNienKhoaVaThamSoView
 
 urlpatterns = [
     path('quydinh/', views.ListCreateQuyDinhView.as_view(), name='list-create-quydinh'),
+    path('quydinh/settings/latest/', views.LatestQuyDinhSettingsView.as_view(), name='latest-quydinh-settings'),
     path('quydinh/latest/', views.LatestQuyDinhView.as_view(), name='latest-quydinh'),
     path('quydinh/<int:IDNienKhoa>/', views.QuyDinhDetailView.as_view(), name='detail-quydinh'),
     path('nienkhoa-list/', views.ListNienKhoaView.as_view(), name='nienkhoa-list'),

@@ -1,9 +1,8 @@
-// src/pages/GiaoVu/GiaoVuDashboard.jsx
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
-import { FaUsers, FaSchool, FaClipboardList, FaChartBar, FaGraduationCap } from "react-icons/fa";
+// ✅ Thêm icon mới cho chức năng
+import { FaUsers, FaSchool, FaClipboardList, FaChartBar, FaGraduationCap, FaGavel } from "react-icons/fa";
 import { useLayout } from "../../contexts/LayoutContext";
 import '../../assets/styles/GiaoVuDashboard.css';
 
@@ -52,24 +51,32 @@ const GiaoVuDashboard = () => {
       color: "info", 
       path: "/giaovu/baocao"
     },
+    // ✅ THÊM THẺ CHỨC NĂNG MỚI
+    { 
+      title: "Quyền sửa điểm", 
+      description: "Cho phép hoặc khóa chức năng sửa điểm của giáo viên theo học kỳ.", 
+      icon: <FaGavel />, 
+      color: "secondary", 
+      path: "/giaovu/quyen-sua-diem"
+    },
   ];
 
   return (
     <div className="dashboard-container">
       <Container fluid className="px-4 py-4">
-        {/* Animated Banner không thay đổi */}
+        {/* Animated Banner */}
         <div className="welcome-banner p-4 rounded-4 position-relative overflow-hidden mb-4">
-          <div className="banner-bg-animation">
-            <div className="floating-orb orb-1"></div><div className="floating-orb orb-2"></div><div className="floating-orb orb-3"></div><div className="floating-orb orb-4"></div><div className="floating-orb orb-5"></div>
-          </div>
-          <div className="grid-pattern"></div>
-          <div className="wave-animation"><div className="wave wave-1"></div><div className="wave wave-2"></div><div className="wave wave-3"></div></div>
-          <div className="particles"><div className="particle particle-1"></div><div className="particle particle-2"></div><div className="particle particle-3"></div><div className="particle particle-4"></div><div className="particle particle-5"></div><div className="particle particle-6"></div></div>
-          <div className="shimmer-effect"></div>
-          <div className="welcome-content d-flex align-items-center">
-            <div className="banner-avatar-section me-4"><div className="avatar-container"><div className="avatar-main"><div className="avatar-placeholder"><FaSchool size={32} className="text-white avatar-icon" /></div></div><div className="avatar-ring ring-1"></div><div className="avatar-ring ring-2"></div><div className="avatar-pulse pulse-1"></div><div className="avatar-pulse pulse-2"></div><div className="avatar-glow"></div></div></div>
-            <div><h2 className="text-white mb-1 fw-bold banner-title">Chào mừng, Giáo vụ!</h2><p className="text-white-75 mb-0 banner-subtitle">Hỗ trợ quản lý học sinh và lớp học hiệu quả</p></div>
-          </div>
+            <div className="banner-bg-animation">
+                <div className="floating-orb orb-1"></div><div className="floating-orb orb-2"></div><div className="floating-orb orb-3"></div><div className="floating-orb orb-4"></div><div className="floating-orb orb-5"></div>
+            </div>
+            <div className="welcome-content d-flex align-items-center">
+                <div className="banner-avatar-section me-4">
+                    <div className="avatar-container">
+                        <div className="avatar-main"><div className="avatar-placeholder"><FaSchool size={32} className="text-white avatar-icon" /></div></div>
+                    </div>
+                </div>
+                <div><h2 className="text-white mb-1 fw-bold banner-title">Chào mừng, Giáo vụ!</h2><p className="text-white-75 mb-0 banner-subtitle">Hỗ trợ quản lý học sinh và lớp học hiệu quả</p></div>
+            </div>
         </div>
 
         {/* Main Functions */}
@@ -77,7 +84,7 @@ const GiaoVuDashboard = () => {
           <h5 className="fw-bold text-dark mb-3 border-start border-primary border-4 ps-2">Chức năng chính</h5>
           <Row className="g-4">
             {menuItems.map((item, index) => (
-              <Col xs={12} md={6} xl={4} key={index}> {/* THAY ĐỔI: xl={4} để mỗi hàng có 3 cột */}
+              <Col xs={12} md={6} xl={4} key={index}>
                 <Card className="function-card h-100 border-0 shadow-sm" onClick={() => navigate(item.path)}>
                   <Card.Body className="p-4 d-flex flex-column">
                     <div className="d-flex align-items-center mb-3">

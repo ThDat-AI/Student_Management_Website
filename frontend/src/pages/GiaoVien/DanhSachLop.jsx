@@ -69,7 +69,7 @@ const DanhSachLop = () => {
             const res = await api.get(`/api/classes/lophoc/danh-sach-json/?lophoc_id=${selectedLopHoc}`);
             setStudents(res.data);
             if (res.data.length > 0) {
-                toast.success(`Tải thành công danh sách lớp ${lopInfo?.TenLop}.`);
+                // toast.success(`Tải thành công danh sách lớp ${lopInfo?.TenLop}.`);
             } else {
                 toast.info(`Lớp ${lopInfo?.TenLop} hiện chưa có học sinh.`);
             }

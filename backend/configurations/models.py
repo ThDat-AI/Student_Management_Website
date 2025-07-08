@@ -33,13 +33,8 @@ class ThamSo(models.Model):
     SoLopK10 = models.PositiveIntegerField(default=0)
     SoLopK11 = models.PositiveIntegerField(default=0)
     SoLopK12 = models.PositiveIntegerField(default=0)
-
-    #Trường mới thêm
-    HocKy = models.ForeignKey('grading.HocKy', on_delete=models.PROTECT, null=True, blank=True, help_text="Học kỳ áp dụng cho quy định này")
-    ChoPhepSuaDiem = models.BooleanField(default=True, help_text="Cho phép giáo viên sửa điểm hay không")
-    GhiChu = models.TextField(null=True, blank=True, help_text="Ghi chú nội bộ")
-    NguoiCapNhatCuoi = models.CharField(max_length=100, null=True, blank=True, help_text="Tên người cập nhật gần nhất")
-    NgayCapNhat = models.DateTimeField(auto_now=True, help_text="Ngày giờ cập nhật gần nhất")
+    ChoPhepSuaDiemHK1 = models.BooleanField(default=False, help_text="Cho phép giáo viên sửa điểm hay không")
+    ChoPhepSuaDiemHK2 = models.BooleanField(default=False, help_text="Cho phép giáo viên sửa điểm hay không")
 
     def __str__(self):
         return f"Quy định niên khóa {self.IDNienKhoa.TenNienKhoa}"

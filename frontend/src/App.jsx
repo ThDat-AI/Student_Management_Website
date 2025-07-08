@@ -40,6 +40,7 @@ import QuanLyDanhSachLopPage from "./pages/GiaoVu/LapDanhSachLop/QuanLyDanhSachL
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
 import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
 import LapDanhSachLop from "./pages/GiaoVu/LapDanhSachLop/LapDanhSachLop";
+import QuanLyQuyenSuaDiem from "./pages/GiaoVu/QuanLyQuyenSuaDiem"; 
 
 
 // Giao Vien pages
@@ -117,6 +118,7 @@ function App() {
 
                   {/* Xem điểm */}
                   <Route path="giaovu/xem-diem" element={<XemDiemSo />} />
+                  <Route path="giaovu/quyen-sua-diem" element={<QuanLyQuyenSuaDiem />} />
                 </Route>
 
                 {/* Giao Vien Routes */}

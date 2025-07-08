@@ -1,9 +1,9 @@
-// contexts/AuthContext.jsx
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../api';
 import { ACCESS_TOKEN, REFRESH_TOKEN, USER_ROLE } from '../constants/index';
 
-const AuthContext = createContext(null);
+// Thêm "export" để có thể import ở nơi khác nếu cần
+export const AuthContext = createContext(null);
 
 const getInitialUser = () => {
     try {
@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// Custom hook này là cách tốt nhất để component con sử dụng context
 export const useAuth = () => {
     return useContext(AuthContext);
 };
