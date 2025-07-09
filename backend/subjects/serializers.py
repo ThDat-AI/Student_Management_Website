@@ -47,6 +47,17 @@ class MonHocSerializer(serializers.ModelSerializer):
         return data
 
 class NienKhoaSerializer(serializers.ModelSerializer):
+    is_current = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = NienKhoa
-        fields = ['id', 'TenNienKhoa']
+        fields = ['id', 'TenNienKhoa', 'is_current']
+
+    def get_is_current(self, obj):
+        # Lấy niên khóa mới nhất trực tiếp từ DB
+        latest_nien_khoa = NienKhoa.objects.order_by('-TenNienKhoa').first()
+        
+        if not latest_nien_khoa:
+            return False
+            
+        return obj.id == latest_nien_khoa.id
