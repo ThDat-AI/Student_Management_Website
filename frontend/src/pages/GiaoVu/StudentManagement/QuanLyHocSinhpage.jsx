@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
-import { FaUserPlus, FaSearch } from 'react-icons/fa';
+import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { FaUserPlus, FaSearch, FaUserGraduate } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
 
 import '../../../assets/styles/GiaoVuDashboard.css';
+
 const QuanLyHocSinhPage = () => {
     const navigate = useNavigate();
     const { setPageTitle } = useLayout();
@@ -19,40 +20,104 @@ const QuanLyHocSinhPage = () => {
             title: "Tiếp nhận học sinh",
             description: "Thêm, sửa, xóa hồ sơ học sinh mới vào hệ thống.",
             icon: <FaUserPlus />,
-            path: "/giaovu/hoc-sinh/tiep-nhan" // Đường dẫn mới
+            color: "primary",
+            path: "/giaovu/hoc-sinh/tiep-nhan"
         },
         {
             title: "Tra cứu học sinh",
             description: "Tìm kiếm và xem thông tin chi tiết của học sinh.",
             icon: <FaSearch />,
+            color: "success",
             path: "/giaovu/hoc-sinh/tra-cuu"
         }
     ];
 
     return (
-        <Container fluid className="py-4">
-            <h2 className="mb-4">Quản lý Học sinh</h2>
-            <Row>
-                {subMenuItems.map((item, index) => (
-                    <Col md={6} key={index} className="mb-4">
-                        <Card 
-                            className="h-100 function-card-sub" 
-                            onClick={() => navigate(item.path)}
-                        >
-                            <Card.Body className="d-flex align-items-center">
-                                <div className="function-icon-sub me-4">{item.icon}</div>
-                                <div>
-                                    <Card.Title as="h5" className="mb-1">{item.title}</Card.Title>
-                                    <Card.Text className="text-muted">{item.description}</Card.Text>
+        <div className="dashboard-container">
+            <Container fluid className="px-4 py-4">
+                {/* Banner với hiệu ứng animation */}
+                <div className="welcome-banner p-4 rounded-4 position-relative overflow-hidden mb-4">
+                    <div className="banner-bg-animation">
+                        <div className="floating-orb orb-1"></div>
+                        <div className="floating-orb orb-2"></div>
+                        <div className="floating-orb orb-3"></div>
+                        <div className="floating-orb orb-4"></div>
+                        <div className="floating-orb orb-5"></div>
+                    </div>
+                    <div className="grid-pattern"></div>
+                    <div className="wave-animation">
+                        <div className="wave wave-1"></div>
+                        <div className="wave wave-2"></div>
+                        <div className="wave wave-3"></div>
+                    </div>
+                    <div className="particles">
+                        <div className="particle particle-1"></div>
+                        <div className="particle particle-2"></div>
+                        <div className="particle particle-3"></div>
+                        <div className="particle particle-4"></div>
+                        <div className="particle particle-5"></div>
+                        <div className="particle particle-6"></div>
+                    </div>
+                    <div className="shimmer-effect"></div>
+                    <div className="welcome-content d-flex align-items-center">
+                        <div className="banner-avatar-section me-4">
+                            <div className="avatar-container">
+                                <div className="avatar-main">
+                                    <div className="avatar-placeholder">
+                                        <FaUserGraduate size={32} className="text-white avatar-icon" />
+                                    </div>
                                 </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
-        </Container>
+                                <div className="avatar-ring ring-1"></div>
+                                <div className="avatar-ring ring-2"></div>
+                                <div className="avatar-pulse pulse-1"></div>
+                                <div className="avatar-pulse pulse-2"></div>
+                                <div className="avatar-glow"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 className="text-white mb-1 fw-bold banner-title">Quản lý Học sinh</h2>
+                            <p className="text-white-75 mb-0 banner-subtitle">Quản lý thông tin và hồ sơ học sinh trong hệ thống</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Giao diện chức năng */}
+                <div>
+                    <h5 className="fw-bold text-dark mb-3 border-start border-primary border-4 ps-2">Chọn chức năng quản lý</h5>
+                    <Row className="g-4">
+                        {subMenuItems.map((item, index) => (
+                            <Col xs={12} md={6} xl={4} key={index}>
+                                <Card className="function-card h-100 border-0 shadow-sm" onClick={() => navigate(item.path)}>
+                                    <Card.Body className="p-4 d-flex flex-column">
+                                        <div className="d-flex align-items-center mb-3">
+                                            <div className={`function-icon p-3 bg-${item.color} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center`}>
+                                                {React.cloneElement(item.icon, { size: 24, className: `text-${item.color}` })}
+                                            </div>
+                                            <h5 className="fw-bold mb-0 ms-3">{item.title}</h5>
+                                        </div>
+                                        <p className="text-muted mb-3 lh-base flex-grow-1">{item.description}</p>
+                                        <div className="text-end mt-auto">
+                                            <Button 
+                                                variant={item.color} 
+                                                size="sm" 
+                                                className="px-3 rounded-pill" 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    navigate(item.path); 
+                                                }}
+                                            >
+                                                Truy cập
+                                            </Button>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                </div>
+            </Container>
+        </div>
     );
 };
 
 export default QuanLyHocSinhPage;
-
