@@ -6,8 +6,13 @@ djangorestframework-simplejwt
 PyJWT
 pytz
 sqlparse
-mssql-django
+mssql-django 
 pyodbc
 python-dotenv
 openpyxl
 reportlab
+gunicorn
+psycopg2-binary
+dj-database-url
+django-extensions
+django-filter
