@@ -1,5 +1,3 @@
-// src/pages/GiaoVu/LapDanhSachLop/components/QuanLyHocSinhLopModal.jsx
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Modal, Button, Row, Col, Table, Card, Spinner, Alert, Badge, Container, Form, InputGroup } from 'react-bootstrap';
 import { FaArrowLeft, FaArrowRight, FaSearch } from 'react-icons/fa';
@@ -8,12 +6,13 @@ import { toast } from 'react-toastify';
 import './LapDanhSachLop.css';
 
 // Component con để hiển thị bảng học sinh
+// === COMPONENT NÀY SẼ ĐƯỢC CẬP NHẬT Ở DƯỚI ===
 const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onDoubleClick, searchTerm, setSearchTerm }) => {
     const formatDate = (dateString) => new Date(dateString).toLocaleDateString('vi-VN');
 
     return (
-        <Card className="h-100 d-flex flex-column">
-            <Card.Header>{title} ({students.length})</Card.Header>
+        <Card className="h-100 d-flex flex-column shadow-sm">
+            <Card.Header className="fw-bold">{title} ({students.length})</Card.Header>
             <div className="p-2 border-bottom">
                 <InputGroup size="sm">
                     <InputGroup.Text><FaSearch /></InputGroup.Text>
@@ -24,11 +23,11 @@ const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onD
                     />
                 </InputGroup>
             </div>
-            <div className="table-responsive dual-listbox flex-grow-1"> 
-                <Table striped hover size="sm" className="mb-0">
+            <div className="table-responsive flex-grow-1"> 
+                <Table striped hover size="sm" className="mb-0 dual-listbox-table">
                     <thead>
                         <tr>
-                            <th>
+                            <th style={{ width: '5%' }}>
                                 <Form.Check 
                                     type="checkbox"
                                     onChange={onSelectAll}
@@ -44,12 +43,12 @@ const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onD
                     </thead>
                     <tbody>
                         {students.length > 0 ? students.map(student => (
-                            <tr key={student.id} onDoubleClick={() => onDoubleClick(student)} style={{cursor: 'pointer'}}>
+                            <tr key={student.id} onDoubleClick={() => onDoubleClick(student)}>
                                 <td>
                                     <Form.Check 
                                         type="checkbox"
                                         checked={selectedIds.includes(student.id)}
-                                        onChange={() => onSelect(student)}
+                                        onChange={() => onSelect(student.id)}
                                     />
                                 </td>
                                 <td>{`${student.Ho} ${student.Ten}`}</td>
@@ -59,8 +58,7 @@ const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onD
                             </tr>
                         )) : (
                             <tr>
-                                {/* Cập nhật colspan thành 5 */}
-                                <td colSpan="5" className="text-center text-muted">Không có học sinh</td>
+                                <td colSpan="5" className="text-center text-muted py-3">Không có học sinh</td>
                             </tr>
                         )}
                     </tbody>
@@ -72,7 +70,7 @@ const StudentTable = ({ title, students, selectedIds, onSelect, onSelectAll, onD
 
 
 const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [lopHocInfo, setLopHocInfo] = useState(null);
@@ -106,7 +104,6 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
         if (show) {
             fetchData();
         } else {
-            setLopHocInfo(null);
             setStudentsInClass([]);
             setAvailableStudents([]);
             setSelectedInClass([]);
@@ -130,60 +127,37 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
         );
     }, [availableStudents, searchAvailable]);
 
-    const handleSelect = (student, listType) => {
-        const selectedList = listType === 'inClass' ? selectedInClass : selectedAvailable;
-        const setSelectedList = listType === 'inClass' ? setSelectedInClass : setSelectedAvailable;
-        const studentId = student.id;
-
-        if (selectedList.includes(studentId)) {
-            setSelectedList(selectedList.filter(id => id !== studentId));
-        } else {
-            setSelectedList([...selectedList, studentId]);
-        }
+    const handleSelect = (studentId, listType) => {
+        const setSelected = listType === 'inClass' ? setSelectedInClass : setSelectedAvailable;
+        setSelected(prev => prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]);
     };
     
     const handleSelectAll = (listType) => {
         if (listType === 'inClass') {
-            if (selectedInClass.length === filteredStudentsInClass.length) {
-                setSelectedInClass([]);
-            } else {
-                setSelectedInClass(filteredStudentsInClass.map(s => s.id));
-            }
+            setSelectedInClass(prev => prev.length === filteredStudentsInClass.length ? [] : filteredStudentsInClass.map(s => s.id));
         } else {
-            if (selectedAvailable.length === filteredAvailableStudents.length) {
-                setSelectedAvailable([]);
-            } else {
-                setSelectedAvailable(filteredAvailableStudents.map(s => s.id));
-            }
+            setSelectedAvailable(prev => prev.length === filteredAvailableStudents.length ? [] : filteredAvailableStudents.map(s => s.id));
         }
     };
 
-    const handleAdd = () => {
-        const toMove = availableStudents.filter(s => selectedAvailable.includes(s.id));
-        setStudentsInClass([...studentsInClass, ...toMove].sort((a,b) => a.Ten.localeCompare(b.Ten)));
-        setAvailableStudents(availableStudents.filter(s => !selectedAvailable.includes(s.id)));
-        setSelectedAvailable([]);
+    const moveStudents = (fromList, setFromList, toList, setToList, selectedIds, setSelectedIds) => {
+        const studentsToMove = fromList.filter(s => selectedIds.includes(s.id));
+        setToList(prev => [...prev, ...studentsToMove].sort((a, b) => a.Ten.localeCompare(b.Ten)));
+        setFromList(prev => prev.filter(s => !selectedIds.includes(s.id)));
+        setSelectedIds([]);
     };
 
-    const handleRemove = () => {
-        const toMove = studentsInClass.filter(s => selectedInClass.includes(s.id));
-        setAvailableStudents([...availableStudents, ...toMove].sort((a,b) => a.Ten.localeCompare(b.Ten)));
-        setStudentsInClass(studentsInClass.filter(s => !selectedInClass.includes(s.id)));
-        setSelectedInClass([]);
-    };
+    const handleAdd = () => moveStudents(availableStudents, setAvailableStudents, studentsInClass, setStudentsInClass, selectedAvailable, setSelectedAvailable);
+    const handleRemove = () => moveStudents(studentsInClass, setStudentsInClass, availableStudents, setAvailableStudents, selectedInClass, setSelectedInClass);
 
-    const handleDoubleClickAdd = (studentToAdd) => {
-        if (studentsInClass.length >= siSoToiDa) {
-            toast.warn(`Sĩ số đã đạt tối đa (${siSoToiDa}).`);
-            return;
+    const handleDoubleClick = (student, fromListType) => {
+        if (fromListType === 'available') {
+            setAvailableStudents(prev => prev.filter(s => s.id !== student.id));
+            setStudentsInClass(prev => [...prev, student].sort((a, b) => a.Ten.localeCompare(b.Ten)));
+        } else {
+            setStudentsInClass(prev => prev.filter(s => s.id !== student.id));
+            setAvailableStudents(prev => [...prev, student].sort((a, b) => a.Ten.localeCompare(b.Ten)));
         }
-        setAvailableStudents(prev => prev.filter(s => s.id !== studentToAdd.id));
-        setStudentsInClass(prev => [...prev, studentToAdd].sort((a, b) => a.Ten.localeCompare(b.Ten)));
-    };
-
-    const handleDoubleClickRemove = (studentToRemove) => {
-        setStudentsInClass(prev => prev.filter(s => s.id !== studentToRemove.id));
-        setAvailableStudents(prev => [...prev, studentToRemove].sort((a, b) => a.Ten.localeCompare(b.Ten)));
     };
 
     const handleSave = async () => {
@@ -211,46 +185,40 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
                 <Modal.Title className="d-flex align-items-center">
                     Quản lý danh sách lớp: {lopHocInfo?.TenLop}
                     {siSoToiDa > 0 && 
-                        <Badge bg={isOverCapacity ? 'danger' : 'primary'} className="ms-3 fs-6">
+                        <Badge bg={isOverCapacity ? 'danger' : 'primary'} className="ms-3 fs-6 fw-normal">
                             Sĩ số: {studentsInClass.length} / {siSoToiDa}
                         </Badge>
                     }
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                {loading && <div className="text-center my-5"><Spinner animation="border" /></div>}
-                {error && <Alert variant="danger">{error}</Alert>}
-                {!loading && !error && (
-                    <Container fluid className="h-100">
+            <Modal.Body className="d-flex flex-column">
+                {loading ? (
+                    <div className="text-center my-5"><Spinner animation="border" /></div>
+                ) : error ? (
+                    <Alert variant="danger">{error}</Alert>
+                ) : (
+                    <Container fluid className="flex-grow-1">
                         <Row className="h-100">
-                            <Col>
+                            <Col className="d-flex flex-column">
                                 <StudentTable
-                                    title="Học sinh trong lớp"
-                                    students={filteredStudentsInClass}
-                                    selectedIds={selectedInClass}
-                                    onSelect={(student) => handleSelect(student, 'inClass')}
-                                    onSelectAll={() => handleSelectAll('inClass')}
-                                    onDoubleClick={handleDoubleClickRemove}
-                                    searchTerm={searchInClass}
-                                    setSearchTerm={setSearchInClass}
+                                    title="Học sinh trong lớp" students={filteredStudentsInClass} selectedIds={selectedInClass}
+                                    onSelect={(id) => handleSelect(id, 'inClass')} onSelectAll={() => handleSelectAll('inClass')}
+                                    onDoubleClick={(student) => handleDoubleClick(student, 'inClass')}
+                                    searchTerm={searchInClass} setSearchTerm={setSearchInClass}
                                 />
                             </Col>
 
                             <Col xs="auto" className="d-flex flex-column justify-content-center align-items-center px-2">
-                                <Button variant="light" className="mb-2 border" onClick={handleAdd} disabled={selectedAvailable.length === 0 || isOverCapacity} title="Thêm vào lớp"> <FaArrowLeft /> </Button>
+                                <Button variant="light" className="mb-2 border" onClick={handleAdd} disabled={selectedAvailable.length === 0} title="Thêm vào lớp"> <FaArrowLeft /> </Button>
                                 <Button variant="light" className="border" onClick={handleRemove} disabled={selectedInClass.length === 0} title="Xóa khỏi lớp"> <FaArrowRight /> </Button>
                             </Col>
 
-                            <Col>
+                            <Col className="d-flex flex-column">
                                 <StudentTable
-                                    title="Học sinh đủ điều kiện"
-                                    students={filteredAvailableStudents}
-                                    selectedIds={selectedAvailable}
-                                    onSelect={(student) => handleSelect(student, 'available')}
-                                    onSelectAll={() => handleSelectAll('available')}
-                                    onDoubleClick={handleDoubleClickAdd}
-                                    searchTerm={searchAvailable}
-                                    setSearchTerm={setSearchAvailable}
+                                    title="Học sinh đủ điều kiện" students={filteredAvailableStudents} selectedIds={selectedAvailable}
+                                    onSelect={(id) => handleSelect(id, 'available')} onSelectAll={() => handleSelectAll('available')}
+                                    onDoubleClick={(student) => handleDoubleClick(student, 'available')}
+                                    searchTerm={searchAvailable} setSearchTerm={setSearchAvailable}
                                 />
                             </Col>
                         </Row>
@@ -260,7 +228,7 @@ const QuanLyHocSinhLopModal = ({ show, handleClose, lopHocId, onSaveSuccess }) =
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}> Hủy </Button>
                 <Button variant="primary" onClick={handleSave} disabled={saving || loading || isOverCapacity}>
-                    {saving ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> Đang lưu...</> : 'Lưu thay đổi'}
+                    {saving ? <><Spinner as="span" animation="border" size="sm" /> Đang lưu...</> : 'Lưu thay đổi'}
                 </Button>
             </Modal.Footer>
         </Modal>

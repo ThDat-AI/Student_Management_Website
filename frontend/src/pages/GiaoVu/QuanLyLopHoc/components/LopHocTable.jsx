@@ -1,4 +1,3 @@
-// src/pages/GiaoVu/QuanLyLopHoc/components/LopHocTable.jsx
 import React from 'react';
 import { Table, Button, Badge } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaBook } from 'react-icons/fa';
@@ -20,7 +19,7 @@ const LopHocTable = ({ lopHocList, onEdit, onDelete, onManageSubjects }) => {
         </thead>
         <tbody>
           {lopHocList.map((lop) => (
-            <tr key={lop.id}>
+            <tr key={lop.id} style={{ opacity: lop.id.toString().startsWith('temp-') ? 0.5 : 1 }}>
               <td><strong>{lop.TenLop}</strong></td>
               <td><Badge bg="info">{lop.TenKhoi}</Badge></td>
               <td>{lop.TenNienKhoa}</td>
@@ -37,13 +36,13 @@ const LopHocTable = ({ lopHocList, onEdit, onDelete, onManageSubjects }) => {
                 {lop.MonHoc.length > 3 && <Badge pill bg="secondary">...</Badge>}
               </td>
               <td className="text-center">
-                <Button variant="outline-success" size="sm" className="me-2" onClick={() => onManageSubjects(lop)} title="Quản lý môn học">
+                <Button variant="outline-success" size="sm" className="me-2" onClick={() => onManageSubjects(lop)} title="Quản lý môn học" disabled={!lop.is_editable}>
                   <FaBook />
                 </Button>
-                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => onEdit(lop)} title="Sửa lớp học">
+                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => onEdit(lop)} title="Sửa lớp học" disabled={!lop.is_editable}>
                   <FaEdit />
                 </Button>
-                <Button variant="outline-danger" size="sm" onClick={() => onDelete(lop)} title="Xóa lớp học">
+                <Button variant="outline-danger" size="sm" onClick={() => onDelete(lop)} title="Xóa lớp học" disabled={!lop.is_editable}>
                   <FaTrash />
                 </Button>
               </td>

@@ -7,9 +7,9 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
   const [allMonHocs, setAllMonHocs] = useState([]);
   const [selectedMonHocIds, setSelectedMonHocIds] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false); // Thêm state loading riêng
+  const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
-  const [searchTerm, setSearchTerm] = useState(''); // Thêm state cho tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (show && lopHocData) {
@@ -17,7 +17,6 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
         setLoading(true);
         setApiError('');
         try {
-          // === SỬA LỖI URL VÀ THAM SỐ Ở ĐÂY ===
           const res = await api.get(`/api/subjects/monhoc-list/?nienkhoa_id=${lopHocData.IDNienKhoa}`);
           setAllMonHocs(res.data);
           const initialSelectedIds = new Set(lopHocData.MonHoc.map(mh => mh.id));
@@ -30,7 +29,6 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
       };
       fetchMonHocs();
     } else {
-      // Reset state khi modal đóng
       setSearchTerm('');
     }
   }, [show, lopHocData]);
@@ -58,7 +56,6 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
     }
   };
 
-  // Lọc danh sách môn học dựa trên searchTerm
   const filteredMonHocs = searchTerm
     ? allMonHocs.filter(mh => mh.TenMonHoc.toLowerCase().includes(searchTerm.toLowerCase()))
     : allMonHocs;
@@ -71,8 +68,6 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
         </Modal.Header>
         <Modal.Body>
           {apiError && <Alert variant="danger">{apiError}</Alert>}
-          
-          {/* Thêm ô tìm kiếm */}
           <InputGroup className="mb-3">
             <InputGroup.Text><FaSearch /></InputGroup.Text>
             <FormControl 
@@ -81,7 +76,6 @@ const MonHocModal = ({ show, onHide, onSubmit, lopHocData }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </InputGroup>
-
           {loading ? (
             <div className="text-center"><Spinner animation="border" /></div>
           ) : (

@@ -1,123 +1,249 @@
-import React, { useEffect } from 'react';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
-import { FaUserPlus, FaSearch, FaUserGraduate } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { Container, Row, Col, Button, Form, Card, Spinner, InputGroup, Dropdown, Alert } from 'react-bootstrap';
+import { FaPlus, FaSearch, FaUserGraduate, FaFilter } from 'react-icons/fa';
+import api from '../../../api/index';
+import { toast } from 'react-toastify';
+import { useDebounce } from 'use-debounce';
 
-import '../../../assets/styles/GiaoVuDashboard.css';
+import confirmDelete from '../../../components/ConfirmDelete';
+import StudentModal from './components/StudentModal';
+import StudentTable from './components/StudentTable';
 
-const QuanLyHocSinhPage = () => {
-    const navigate = useNavigate();
+const StudentManagement = () => {
+    // === STATE ===
+    const [students, setStudents] = useState([]);
+    const [nienKhoas, setNienKhoas] = useState([]);
+    const [khois, setKhois] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm] = useDebounce(searchTerm, 300); // Debounce để tìm kiếm mượt hơn
+
+    const [selectedNienKhoaId, setSelectedNienKhoaId] = useState('');
+    const [currentNienKhoaId, setCurrentNienKhoaId] = useState(null);
+    const [isViewingCurrentNienKhoa, setIsViewingCurrentNienKhoa] = useState(false);
+    
+    const [filterKhoi, setFilterKhoi] = useState('');
+
+    const [showModal, setShowModal] = useState(false);
+    const [modalType, setModalType] = useState('create');
+    const [selectedStudent, setSelectedStudent] = useState(null);
+
+    // Dùng ref để lưu trữ danh sách học sinh cũ khi thực hiện optimistic update
+    const previousStudents = useRef([]);
+    
     const { setPageTitle } = useLayout();
 
-    useEffect(() => {
-        document.title = "Quản lý học sinh";
-        setPageTitle("Quản lý học sinh");
+    // === EFFECTS ===
+    useEffect(() => { 
+        document.title = "Quản lý học sinh"; 
+        setPageTitle("Quản lý học sinh"); 
     }, [setPageTitle]);
 
-    const subMenuItems = [
-        {
-            title: "Tiếp nhận học sinh",
-            description: "Thêm, sửa, xóa hồ sơ học sinh mới vào hệ thống.",
-            icon: <FaUserPlus />,
-            color: "primary",
-            path: "/giaovu/hoc-sinh/tiep-nhan"
-        },
-        {
-            title: "Tra cứu học sinh",
-            description: "Tìm kiếm và xem thông tin chi tiết của học sinh.",
-            icon: <FaSearch />,
-            color: "success",
-            path: "/giaovu/hoc-sinh/tra-cuu"
+    // CHỈ TẢI CÁC BỘ LỌC MỘT LẦN KHI VÀO TRANG
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [nienKhoasRes, khoisRes] = await Promise.all([
+                    api.get('/api/students/filters/nienkhoa/'), 
+                    api.get('/api/students/filters/khoi/'),     
+                ]);
+                
+                const fetchedNienKhoas = nienKhoasRes.data;
+                setNienKhoas(fetchedNienKhoas);
+                setKhois(khoisRes.data);
+
+                const current = fetchedNienKhoas.find(nk => nk.is_current);
+                if (current) {
+                    setCurrentNienKhoaId(current.id);
+                    setSelectedNienKhoaId(current.id);
+                } else if (fetchedNienKhoas.length > 0) {
+                    const firstId = fetchedNienKhoas[0].id;
+                    setCurrentNienKhoaId(firstId);
+                    setSelectedNienKhoaId(firstId);
+                } else {
+                    toast.warn("Chưa có niên khóa nào trong hệ thống.");
+                    setLoading(false); // Dừng loading nếu không có niên khóa
+                }
+            } catch (err) {
+                toast.error("Không thể tải dữ liệu cần thiết cho trang.");
+                setLoading(false);
+            }
+        };
+        fetchFilters();
+    }, []);
+
+    // TẢI DANH SÁCH HỌC SINH KHI CÁC BỘ LỌC THAY ĐỔI
+    useEffect(() => {
+        if (!selectedNienKhoaId) return;
+
+        const fetchStudents = async () => {
+            setLoading(true);
+            try {
+                const params = {
+                    search: debouncedSearchTerm,
+                    nien_khoa_id: selectedNienKhoaId,
+                    khoi_id: filterKhoi,
+                };
+                const res = await api.get('/api/students/hocsinh/', { params });
+                setStudents(res.data);
+            } catch (err) {
+                toast.error("Không thể tải danh sách học sinh.");
+                setStudents([]); // Xóa danh sách cũ nếu lỗi
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudents();
+    }, [debouncedSearchTerm, filterKhoi, selectedNienKhoaId]);
+    
+    // Cập nhật trạng thái "đang xem niên khóa hiện tại"
+    useEffect(() => {
+        setIsViewingCurrentNienKhoa(selectedNienKhoaId === currentNienKhoaId);
+    }, [selectedNienKhoaId, currentNienKhoaId]);
+
+    // === HANDLERS ===
+    const handleShowModal = (type, student = null) => {
+        setModalType(type);
+        setSelectedStudent(student);
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedStudent(null);
+    };
+    
+    // Tối ưu hóa với Optimistic Update
+    const handleSubmitInModal = async (formData, studentId) => {
+        handleCloseModal(); // Đóng modal ngay lập tức
+        
+        if (modalType === 'create') {
+            // Hiển thị một bản ghi tạm thời
+            const tempStudent = { id: `temp-${Date.now()}`, ...formData, is_deletable: true, TenNienKhoaTiepNhan: nienKhoas.find(nk => nk.id === formData.IDNienKhoaTiepNhan)?.TenNienKhoa, TenKhoiDuKien: khois.find(k => k.id === formData.KhoiDuKien)?.TenKhoi };
+            previousStudents.current = students;
+            setStudents(prev => [tempStudent, ...prev]);
+            
+            try {
+                const res = await api.post('/api/students/hocsinh/', formData);
+                // Thay thế bản ghi tạm thời bằng dữ liệu thật từ server
+                setStudents(prev => prev.map(s => s.id === tempStudent.id ? res.data : s));
+                toast.success('Thêm học sinh thành công!');
+            } catch (err) {
+                toast.error(err.response?.data?.detail || "Thêm mới thất bại.");
+                setStudents(previousStudents.current); // Rollback
+            }
+        } else { // Chế độ sửa
+            const originalStudent = students.find(s => s.id === studentId);
+            const updatedStudent = { ...originalStudent, ...formData, TenKhoiDuKien: khois.find(k => k.id === formData.KhoiDuKien)?.TenKhoi };
+            
+            previousStudents.current = students;
+            setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
+
+            try {
+                await api.patch(`/api/students/hocsinh/${studentId}/`, formData);
+                toast.success('Cập nhật thành công!');
+            } catch (err) {
+                toast.error(err.response?.data?.detail || "Cập nhật thất bại.");
+                setStudents(previousStudents.current); // Rollback
+            }
         }
-    ];
+    };
 
+    const handleDelete = async (student) => {
+        if (!isViewingCurrentNienKhoa || !student.is_deletable) {
+            toast.warn("Không thể xóa học sinh này.");
+            return;
+        }
+
+        const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa học sinh "${student.Ho} ${student.Ten}"?`);
+        if (!isConfirmed) return;
+        
+        // Optimistic delete
+        previousStudents.current = students;
+        setStudents(prev => prev.filter(s => s.id !== student.id));
+
+        try {
+            await api.delete(`/api/students/hocsinh/${student.id}/`);
+            toast.success('Xóa học sinh thành công!');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || "Xóa thất bại.");
+            setStudents(previousStudents.current); // Rollback
+        }
+    };
+
+    // === RENDER ===
     return (
-        <div className="dashboard-container">
-            <Container fluid className="px-4 py-4">
-                {/* Banner với hiệu ứng animation */}
-                <div className="welcome-banner p-4 rounded-4 position-relative overflow-hidden mb-4">
-                    <div className="banner-bg-animation">
-                        <div className="floating-orb orb-1"></div>
-                        <div className="floating-orb orb-2"></div>
-                        <div className="floating-orb orb-3"></div>
-                        <div className="floating-orb orb-4"></div>
-                        <div className="floating-orb orb-5"></div>
-                    </div>
-                    <div className="grid-pattern"></div>
-                    <div className="wave-animation">
-                        <div className="wave wave-1"></div>
-                        <div className="wave wave-2"></div>
-                        <div className="wave wave-3"></div>
-                    </div>
-                    <div className="particles">
-                        <div className="particle particle-1"></div>
-                        <div className="particle particle-2"></div>
-                        <div className="particle particle-3"></div>
-                        <div className="particle particle-4"></div>
-                        <div className="particle particle-5"></div>
-                        <div className="particle particle-6"></div>
-                    </div>
-                    <div className="shimmer-effect"></div>
-                    <div className="welcome-content d-flex align-items-center">
-                        <div className="banner-avatar-section me-4">
-                            <div className="avatar-container">
-                                <div className="avatar-main">
-                                    <div className="avatar-placeholder">
-                                        <FaUserGraduate size={32} className="text-white avatar-icon" />
-                                    </div>
-                                </div>
-                                <div className="avatar-ring ring-1"></div>
-                                <div className="avatar-ring ring-2"></div>
-                                <div className="avatar-pulse pulse-1"></div>
-                                <div className="avatar-pulse pulse-2"></div>
-                                <div className="avatar-glow"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-white mb-1 fw-bold banner-title">Quản lý Học sinh</h2>
-                            <p className="text-white-75 mb-0 banner-subtitle">Quản lý thông tin và hồ sơ học sinh trong hệ thống</p>
-                        </div>
-                    </div>
-                </div>
+        <Container fluid className="py-4">
+            <Row className="justify-content-between align-items-center mb-4">
+                <Col xs={12} md={6} lg={4}>
+                    <h2 className="h4 mb-2 mb-md-0 d-flex align-items-center">
+                        <FaUserGraduate className="me-2 text-primary" /> Quản lý học sinh
+                    </h2>
+                </Col>
+                <Col xs={12} md={6} lg={8} className="d-flex flex-wrap justify-content-end gap-2">
+                    <InputGroup className="flex-grow-1" style={{ maxWidth: '300px' }}>
+                        <InputGroup.Text><FaSearch /></InputGroup.Text>
+                        <Form.Control type="search" placeholder="Tìm theo tên, email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </InputGroup>
+                    <Dropdown as={InputGroup} className="flex-grow-1" style={{ maxWidth: '240px' }}>
+                        <InputGroup.Text><FaFilter /></InputGroup.Text>
+                        <Form.Select value={selectedNienKhoaId} onChange={(e) => setSelectedNienKhoaId(Number(e.target.value))}>
+                            {nienKhoas.length === 0 && <option>Đang tải...</option>}
+                            {nienKhoas.map(nk => (<option key={nk.id} value={nk.id}>{nk.TenNienKhoa}{nk.is_current ? ' (Hiện hành)' : ''}</option>))}
+                        </Form.Select>
+                    </Dropdown>
+                    <Dropdown as={InputGroup} className="flex-grow-1" style={{ maxWidth: '220px' }}>
+                        <InputGroup.Text><FaFilter /></InputGroup.Text>
+                        <Form.Select value={filterKhoi} onChange={(e) => setFilterKhoi(e.target.value)}>
+                            <option value="">Lọc theo khối</option>
+                            {khois.map(khoi => (<option key={khoi.id} value={khoi.id}>{khoi.TenKhoi}</option>))}
+                        </Form.Select>
+                    </Dropdown>
+                    <Button variant="primary" onClick={() => handleShowModal('create')} disabled={!isViewingCurrentNienKhoa}>
+                        <FaPlus className="me-2" /> Thêm
+                    </Button>
+                </Col>
+            </Row>
+            
+            {!isViewingCurrentNienKhoa && selectedNienKhoaId && (
+                 <Alert variant="warning">
+                    Bạn đang xem dữ liệu của một niên khóa cũ. Mọi thao tác thêm, sửa, xóa đều bị vô hiệu hóa.
+                </Alert>
+            )}
 
-                {/* Giao diện chức năng */}
-                <div>
-                    <h5 className="fw-bold text-dark mb-3 border-start border-primary border-4 ps-2">Chọn chức năng quản lý</h5>
-                    <Row className="g-4">
-                        {subMenuItems.map((item, index) => (
-                            <Col xs={12} md={6} xl={4} key={index}>
-                                <Card className="function-card h-100 border-0 shadow-sm" onClick={() => navigate(item.path)}>
-                                    <Card.Body className="p-4 d-flex flex-column">
-                                        <div className="d-flex align-items-center mb-3">
-                                            <div className={`function-icon p-3 bg-${item.color} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center`}>
-                                                {React.cloneElement(item.icon, { size: 24, className: `text-${item.color}` })}
-                                            </div>
-                                            <h5 className="fw-bold mb-0 ms-3">{item.title}</h5>
-                                        </div>
-                                        <p className="text-muted mb-3 lh-base flex-grow-1">{item.description}</p>
-                                        <div className="text-end mt-auto">
-                                            <Button 
-                                                variant={item.color} 
-                                                size="sm" 
-                                                className="px-3 rounded-pill" 
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    navigate(item.path); 
-                                                }}
-                                            >
-                                                Truy cập
-                                            </Button>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
-                </div>
-            </Container>
-        </div>
+            <Card className="shadow-sm">
+                <Card.Body className="p-0">
+                    {loading ? (
+                        <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+                    ) : (
+                        <StudentTable students={students} onEdit={handleShowModal} onDelete={handleDelete} isReadOnly={!isViewingCurrentNienKhoa} />
+                    )}
+                </Card.Body>
+                { !loading && students.length === 0 && (
+                     <Card.Footer className="text-center text-muted p-3">
+                        Không tìm thấy học sinh nào phù hợp.
+                        {isViewingCurrentNienKhoa && !searchTerm && !filterKhoi && (
+                            <Button variant="link" onClick={() => handleShowModal('create')} className="p-0 ms-1">Thêm học sinh mới?</Button>
+                        )}
+                    </Card.Footer>
+                )}
+            </Card>
+
+            {showModal && (
+                <StudentModal 
+                    show={showModal} 
+                    onHide={handleCloseModal} 
+                    modalType={modalType} 
+                    studentData={selectedStudent} 
+                    onSubmit={handleSubmitInModal} 
+                    nienKhoas={nienKhoas}
+                    isViewingCurrentNienKhoa={isViewingCurrentNienKhoa}
+                />
+            )}
+        </Container>
     );
 };
 
-export default QuanLyHocSinhPage;
+export default StudentManagement;

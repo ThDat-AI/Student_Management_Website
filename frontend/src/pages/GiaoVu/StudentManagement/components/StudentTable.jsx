@@ -1,10 +1,8 @@
-// src/pages/GiaoVu/StudentManagement/components/StudentTable.jsx
-
 import React from 'react';
-import { Table, Button } from 'react-bootstrap';
+import { Table, Button, Spinner } from 'react-bootstrap';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
 
-const StudentTable = ({ students, onEdit, onDelete }) => {
+const StudentTable = ({ students, onEdit, onDelete, isReadOnly }) => {
     return (
         <div className="table-responsive">
             <Table hover className="mb-0 align-middle">
@@ -22,8 +20,8 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
                 </thead>
                 <tbody>
                     {students.map((student, index) => (
-                        <tr key={student.id}>
-                            <td>{index + 1}</td>
+                        <tr key={student.id} style={{ opacity: student.id.toString().startsWith('temp-') ? 0.5 : 1 }}>
+                            <td>{student.id.toString().startsWith('temp-') ? <Spinner size="sm" /> : index + 1}</td>
                             <td>
                                 <strong>{student.Ho} {student.Ten}</strong>
                                 <br />
@@ -33,12 +31,25 @@ const StudentTable = ({ students, onEdit, onDelete }) => {
                             <td>{new Date(student.NgaySinh).toLocaleDateString('vi-VN')}</td>
                             <td>{student.Email || 'N/A'}</td>
                             <td>{student.TenNienKhoaTiepNhan}</td>
-                            <td>{student.TenKhoiDuKien}</td>
+                            <td>{student.TenKhoiDuKien || <span className="text-muted">Chưa có</span>}</td>
                             <td className="text-center">
-                                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => onEdit('edit', student)} title="Chỉnh sửa">
+                                <Button 
+                                    variant="outline-primary" 
+                                    size="sm" 
+                                    className="me-2" 
+                                    onClick={() => onEdit('edit', student)} 
+                                    title={isReadOnly ? "Không thể sửa ở niên khóa cũ" : (!student.is_deletable ? "Học sinh đã được phân lớp" : "Chỉnh sửa")}
+                                    disabled={isReadOnly || !student.is_deletable} 
+                                >
                                     <FaEdit />
                                 </Button>
-                                <Button variant="outline-danger" size="sm" onClick={() => onDelete(student)} title="Xóa">
+                                <Button 
+                                    variant="outline-danger" 
+                                    size="sm" 
+                                    onClick={() => onDelete(student)} 
+                                    title={isReadOnly ? "Không thể xóa ở niên khóa cũ" : (!student.is_deletable ? "Học sinh đã được phân lớp" : "Xóa")}
+                                    disabled={isReadOnly || !student.is_deletable} 
+                                >
                                     <FaTrashAlt />
                                 </Button>
                             </td>

@@ -1,61 +1,53 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Container, Row, Col, Button, Alert, Form, Card, Spinner, InputGroup } from 'react-bootstrap';
 import { FaPlus, FaSearch } from 'react-icons/fa';
 import { useLayout } from '../../../contexts/LayoutContext';
-import useDebounce from '../../../hooks/useDebounce'; 
+import { useDebounce } from 'use-debounce';
 import api from '../../../api';
-import { toast } from 'react-toastify'; // Sử dụng toast cho thông báo thành công
+import { toast } from 'react-toastify';
 
-// Import các component con
 import LopHocTable from './components/LopHocTable';
 import LopHocModal from './components/LopHocModal';
 import MonHocModal from './components/MonHocModal';
 import confirmDelete from '../../../components/ConfirmDelete';
 
-
+// Hàm helper để parse lỗi từ API
 const parseApiError = (error) => {
-    // 1. Lỗi mạng hoặc lỗi không xác định
-    if (!error.response) {
-        return "Không thể kết nối tới máy chủ. Vui lòng kiểm tra lại đường truyền mạng.";
-    }
+    if (!error.response) return "Lỗi kết nối máy chủ.";
     const data = error.response.data;
-    // 2. Lỗi có key 'detail' (phổ biến nhất cho lỗi quyền, không tìm thấy,...)
-    if (data && typeof data.detail === 'string') {
-        return data.detail;
-    }
-    // 3. Lỗi validation (là một object, ví dụ: { "TenLop": ["..."], "IDKhoi": ["..."] })
-    if (data && typeof data === 'object') {
-        // Lấy tất cả các thông báo lỗi từ các trường và nối chúng lại thành một chuỗi
-        const messages = Object.values(data).flat().join(' ');
-        if (messages) {
-            return messages;
-        }
-    }
-    // 4. Trường hợp mặc định nếu không khớp các dạng trên
-    return 'Thao tác thất bại. Đã có lỗi không xác định xảy ra.';
+    if (data?.detail) return data.detail;
+    if (typeof data === 'object') return Object.values(data).flat().join(' ');
+    return 'Lỗi không xác định.';
 };
 
-
 const QuanLyLopHoc = () => {
+    // Context và state cơ bản
     const { setPageTitle } = useLayout();
     const [lopHocList, setLopHocList] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(''); // Chỉ dùng cho lỗi toàn trang (lỗi fetch, lỗi xóa)
-    
-    // Các state khác...
-    const [filters, setFilters] = useState({ searchTerm: '', nienKhoa: '', khoi: '', toHop: '' });
+
+    // State cho các dropdown và bộ lọc
     const [dropdowns, setDropdowns] = useState({ nienKhoas: [], khois: [], toHops: [] });
+    const [filters, setFilters] = useState({ searchTerm: '', nienKhoa: '', khoi: '', toHop: '' });
+    const [debouncedSearchTerm] = useDebounce(filters.searchTerm, 500);
+    
+    // State cho modals
     const [showLopHocModal, setShowLopHocModal] = useState(false);
     const [showMonHocModal, setShowMonHocModal] = useState(false);
     const [modalMode, setModalMode] = useState('create');
     const [selectedLopHoc, setSelectedLopHoc] = useState(null);
 
-    const debouncedSearchTerm = useDebounce(filters.searchTerm, 500);
+    // Ref cho optimistic updates
+    const previousLopHocList = useRef([]);
 
-    // Phần fetch dữ liệu không thay đổi
+    // Effect 1: Thiết lập tiêu đề trang
     useEffect(() => {
         document.title = "Quản lý lớp học";
         setPageTitle("Quản lý lớp học");
+    }, [setPageTitle]);
+
+    // Effect 2: Tải dữ liệu cho các dropdown chỉ một lần
+    useEffect(() => {
         const fetchDropdowns = async () => {
             try {
                 const [nkRes, kRes, thRes] = await Promise.all([
@@ -63,53 +55,93 @@ const QuanLyLopHoc = () => {
                     api.get('/api/classes/khoi/'),
                     api.get('/api/subjects/tohop/')
                 ]);
-                setDropdowns({ nienKhoas: nkRes.data, khois: kRes.data, toHops: thRes.data });
+                const fetchedNienKhoas = nkRes.data;
+                setDropdowns({ nienKhoas: fetchedNienKhoas, khois: kRes.data, toHops: thRes.data });
+
+                const current = fetchedNienKhoas.find(nk => nk.is_current);
+                const initialNienKhoaId = current?.id || fetchedNienKhoas[0]?.id || '';
+                
+                if (initialNienKhoaId) {
+                    setFilters(prev => ({ ...prev, nienKhoa: initialNienKhoaId }));
+                } else {
+                    toast.warn("Không có niên khóa nào trong hệ thống. Vui lòng tạo trước.");
+                    setLoading(false);
+                }
             } catch (err) {
-                setError('Không thể tải dữ liệu cho các bộ lọc.');
+                toast.error('Không thể tải dữ liệu cho các bộ lọc.');
+                setLoading(false);
             }
         };
         fetchDropdowns();
-    }, [setPageTitle]);
+    }, []);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const params = { search: debouncedSearchTerm, IDNienKhoa: filters.nienKhoa, IDKhoi: filters.khoi, IDToHop: filters.toHop };
-            const res = await api.get('/api/classes/lophoc/', { params });
-            setLopHocList(res.data.results || res.data);
-        } catch (err) {
-            setError('Không thể tải danh sách lớp học.');
-        } finally {
+    // Effect 3: Fetch danh sách lớp học khi bộ lọc thay đổi
+    useEffect(() => {
+        if (!filters.nienKhoa) {
+            setLopHocList([]);
             setLoading(false);
+            return;
         }
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const params = { 
+                    search: debouncedSearchTerm, 
+                    IDNienKhoa: filters.nienKhoa, 
+                    IDKhoi: filters.khoi, 
+                    IDToHop: filters.toHop 
+                };
+                const res = await api.get('/api/classes/lophoc/', { params });
+                setLopHocList(res.data.results || res.data);
+            } catch (err) {
+                toast.error('Không thể tải danh sách lớp học.');
+                setLopHocList([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, [debouncedSearchTerm, filters.nienKhoa, filters.khoi, filters.toHop]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    // === TÍNH TOÁN GIÁ TRỊ PHÁI SINH TRỰC TIẾP KHI RENDER ===
+    // Đây là cách giải quyết lỗi "nhấp nháy"
+    const currentNienKhoaFromDropdowns = dropdowns.nienKhoas.find(nk => nk.is_current);
+    const isViewingCurrentNienKhoa = currentNienKhoaFromDropdowns?.id === Number(filters.nienKhoa);
 
-    const handleFilterChange = (e) => { setFilters(prev => ({ ...prev, [e.target.name]: e.target.value })); };
-    
-    // Phần mở modal không thay đổi, vốn đã đúng
+    // === HANDLERS ===
+    const handleFilterChange = (e) => {
+        setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
     const handleShowCreateModal = () => { setModalMode('create'); setSelectedLopHoc(null); setShowLopHocModal(true); };
     const handleShowEditModal = (lop) => { setModalMode('edit'); setSelectedLopHoc(lop); setShowLopHocModal(true); };
     const handleShowMonHocModal = (lop) => { setSelectedLopHoc(lop); setShowMonHocModal(true); };
-
-
+    
     const handleSubmitLopHoc = async (formData, lopHocId) => {
-        try {
-            if (modalMode === 'create') {
-                await api.post('/api/classes/lophoc/', formData);
+        setShowLopHocModal(false);
+        previousLopHocList.current = lopHocList;
+        if (modalMode === 'create') {
+            const tempLop = { id: `temp-${Date.now()}`, ...formData, SiSo: 0, MonHoc: [], is_editable: true, TenKhoi: dropdowns.khois.find(k => k.id === Number(formData.IDKhoi))?.TenKhoi, TenNienKhoa: dropdowns.nienKhoas.find(nk => nk.id === Number(formData.IDNienKhoa))?.TenNienKhoa, TenToHop: dropdowns.toHops.find(th => th.id === Number(formData.IDToHop))?.TenToHop };
+            setLopHocList(prev => [tempLop, ...prev]);
+            try {
+                const res = await api.post('/api/classes/lophoc/', formData);
+                setLopHocList(prev => prev.map(l => l.id === tempLop.id ? res.data : l));
                 toast.success('Thêm lớp học thành công!');
-            } else {
-                await api.patch(`/api/classes/lophoc/${lopHocId}/`, formData);
-                toast.success('Cập nhật lớp học thành công!');
+            } catch (err) {
+                toast.error(parseApiError(err));
+                setLopHocList(previousLopHocList.current);
             }
-            setShowLopHocModal(false);
-            fetchData();
-            return { success: true };
-        } catch (err) {
-            const errorMessage = parseApiError(err);
-            return { success: false, error: errorMessage };
+        } else {
+            const updatedLop = { ...lopHocList.find(l => l.id === lopHocId), ...formData };
+            setLopHocList(prev => prev.map(l => l.id === lopHocId ? updatedLop : l));
+            try {
+                const res = await api.patch(`/api/classes/lophoc/${lopHocId}/`, formData);
+                setLopHocList(prev => prev.map(l => l.id === lopHocId ? res.data : l));
+                toast.success('Cập nhật lớp học thành công!');
+            } catch (err) {
+                toast.error(parseApiError(err));
+                setLopHocList(previousLopHocList.current);
+            }
         }
     };
     
@@ -121,45 +153,63 @@ const QuanLyLopHoc = () => {
             fetchData();
             return { success: true };
         } catch (err) {
-            const errorMessage = parseApiError(err);
-            return { success: false, error: errorMessage };
+            return { success: false, error: parseApiError(err) };
         }
     };
 
     const handleDelete = async (lop) => {
         const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa lớp học "${lop.TenLop}"?`);
         if (!isConfirmed) return;
+        
+        previousLopHocList.current = lopHocList;
+        setLopHocList(prev => prev.filter(l => l.id !== lop.id));
         try {
             await api.delete(`/api/classes/lophoc/${lop.id}/`);
             toast.success('Xóa lớp học thành công.');
-            fetchData();
         } catch (err) {
-            const errorMessage = parseApiError(err);
-            setError(errorMessage);
+            toast.error(parseApiError(err));
+            setLopHocList(previousLopHocList.current);
         }
     };
 
-    // Phần JSX render không thay đổi
     return (
         <Container fluid className="py-4">
             <h2 className="h4 mb-4">Quản lý Lớp học</h2>
-            {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
-            {/* Bỏ Alert success, dùng toast */}
             
+            {!isViewingCurrentNienKhoa && filters.nienKhoa && (
+                <Alert variant="warning">
+                    Bạn đang xem dữ liệu của một niên khóa cũ. Mọi thao tác thêm, sửa, xóa đều bị vô hiệu hóa.
+                </Alert>
+            )}
+
             <Card className="shadow-sm">
                 <Card.Header className="p-3 bg-white">
                     <Row className="g-2 align-items-center">
-                        <Col lg={4}><InputGroup><InputGroup.Text><FaSearch /></InputGroup.Text><Form.Control name="searchTerm" placeholder="Tìm theo tên lớp..." onChange={handleFilterChange} /></InputGroup></Col>
-                        <Col lg={6}><Row className="g-2"><Col><Form.Select name="nienKhoa" onChange={handleFilterChange}><option value="">Lọc theo niên khóa</option>{dropdowns.nienKhoas.map(nk => <option key={nk.id} value={nk.id}>{nk.TenNienKhoa}</option>)}</Form.Select></Col><Col><Form.Select name="khoi" onChange={handleFilterChange}><option value="">Lọc theo khối</option>{dropdowns.khois.map(k => <option key={k.id} value={k.id}>{k.TenKhoi}</option>)}</Form.Select></Col><Col><Form.Select name="toHop" onChange={handleFilterChange}><option value="">Lọc theo tổ hợp</option>{dropdowns.toHops.map(th => <option key={th.id} value={th.id}>{th.TenToHop}</option>)}</Form.Select></Col></Row></Col>
-                        <Col lg={2} className="text-end"><Button variant="primary" onClick={handleShowCreateModal}><FaPlus /> Thêm mới</Button></Col>
+                        <Col lg={4}><InputGroup><InputGroup.Text><FaSearch /></InputGroup.Text><Form.Control name="searchTerm" placeholder="Tìm theo tên lớp..." value={filters.searchTerm} onChange={handleFilterChange} /></InputGroup></Col>
+                        <Col lg={6}><Row className="g-2">
+                            <Col><Form.Select name="nienKhoa" value={filters.nienKhoa} onChange={handleFilterChange}>{dropdowns.nienKhoas.map(nk => <option key={nk.id} value={nk.id}>{nk.TenNienKhoa}{nk.is_current ? ' (Hiện hành)' : ''}</option>)}</Form.Select></Col>
+                            <Col><Form.Select name="khoi" value={filters.khoi} onChange={handleFilterChange}><option value="">Tất cả khối</option>{dropdowns.khois.map(k => <option key={k.id} value={k.id}>{k.TenKhoi}</option>)}</Form.Select></Col>
+                            <Col><Form.Select name="toHop" value={filters.toHop} onChange={handleFilterChange}><option value="">Tất cả tổ hợp</option>{dropdowns.toHops.map(th => <option key={th.id} value={th.id}>{th.TenToHop}</option>)}</Form.Select></Col>
+                        </Row></Col>
+                        <Col lg={2} className="text-end"><Button variant="primary" onClick={handleShowCreateModal} disabled={!isViewingCurrentNienKhoa}><FaPlus /> Thêm mới</Button></Col>
                     </Row>
                 </Card.Header>
                 <Card.Body className="p-0">
-                    {loading ? (<div className="text-center py-5"><Spinner animation="border" /></div>) : (lopHocList.length > 0 ? (<LopHocTable lopHocList={lopHocList} onEdit={handleShowEditModal} onDelete={handleDelete} onManageSubjects={handleShowMonHocModal} />) : (<div className="text-center p-5 text-muted">Không có dữ liệu.</div>))}
+                    {loading ? (<div className="text-center py-5"><Spinner animation="border" /></div>) : (
+                        <LopHocTable 
+                            lopHocList={lopHocList} 
+                            onEdit={handleShowEditModal} 
+                            onDelete={handleDelete} 
+                            onManageSubjects={handleShowMonHocModal}
+                        />
+                    )}
                 </Card.Body>
+                {!loading && lopHocList.length === 0 && (
+                     <Card.Footer className="text-center text-muted p-3">Không có lớp học nào phù hợp.</Card.Footer>
+                )}
             </Card>
 
-            {showLopHocModal && <LopHocModal show={showLopHocModal} onHide={() => setShowLopHocModal(false)} onSubmit={handleSubmitLopHoc} lopHocData={selectedLopHoc} modalMode={modalMode} />}
+            {showLopHocModal && <LopHocModal show={showLopHocModal} onHide={() => setShowLopHocModal(false)} onSubmit={handleSubmitLopHoc} lopHocData={selectedLopHoc} modalMode={modalMode} dropdowns={dropdowns} />}
             {showMonHocModal && <MonHocModal show={showMonHocModal} onHide={() => setShowMonHocModal(false)} onSubmit={handleSubmitMonHoc} lopHocData={selectedLopHoc} />}
         </Container>
     );

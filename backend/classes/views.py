@@ -2,7 +2,7 @@
 from rest_framework import generics, views, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -15,14 +15,17 @@ from subjects.models import MonHoc
 from subjects.serializers import MonHocSerializer
 from grading.models import DiemSo
 
-from configurations.models import ThamSo
+from configurations.models import ThamSo, NienKhoa
 
 from django.http import HttpResponse
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-
+def _is_current_nienkhoa(nienkhoa_id):
+    """Hàm helper để kiểm tra niên khóa hiện hành."""
+    latest_nien_khoa = NienKhoa.objects.order_by('-TenNienKhoa').first()
+    return latest_nien_khoa and nienkhoa_id == latest_nien_khoa.id
 
 # Danh sách khối học (dropdown)
 class KhoiListView(generics.ListAPIView):
@@ -58,7 +61,15 @@ class LopHocDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = LopHocSerializer
     permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu]
 
+    def perform_update(self, serializer):
+        if not _is_current_nienkhoa(serializer.instance.IDNienKhoa_id):
+            raise PermissionDenied("Chỉ được phép sửa lớp học của niên khóa hiện hành.")
+        super().perform_update(serializer)
+
     def perform_destroy(self, instance):
+        if not _is_current_nienkhoa(instance.IDNienKhoa_id):
+            raise PermissionDenied("Chỉ được phép xóa lớp học của niên khóa hiện hành.")
+
         if instance.HocSinh.exists():
             raise ValidationError("Không thể xóa lớp học này vì vẫn còn học sinh trong lớp.")
         instance.delete()
@@ -71,13 +82,15 @@ class LopHocMonHocUpdateView(views.APIView):
         try:
             return LopHoc.objects.get(pk=pk)
         except LopHoc.DoesNotExist:
-            return None # Sẽ được xử lý bên dưới
+            raise NotFound("Lớp học không tồn tại.") # Sửa để raise exception
 
     def post(self, request, pk):
         lop_hoc = self.get_lop_hoc(pk)
         if not lop_hoc:
             return Response({"detail": "Lớp học không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
 
+        if not _is_current_nienkhoa(lop_hoc.IDNienKhoa_id):
+             raise PermissionDenied("Chỉ được phép cập nhật môn học cho lớp của niên khóa hiện hành.")
 
         if DiemSo.objects.filter(IDLopHoc=lop_hoc).exists():
             return Response(

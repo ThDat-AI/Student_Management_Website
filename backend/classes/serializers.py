@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from .models import Khoi, LopHoc
 from subjects.serializers import MonHocSerializer # Import MonHocSerializer
-from configurations.models import ThamSo
+from configurations.models import ThamSo, NienKhoa
 class KhoiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Khoi
@@ -23,7 +23,14 @@ class LopHocSerializer(serializers.ModelSerializer):
     
     # Đọc danh sách môn học chi tiết
     MonHoc = MonHocSerializer(many=True, read_only=True)
-    
+    is_editable = serializers.SerializerMethodField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Tối ưu: Lấy niên khóa mới nhất một lần
+        latest_nien_khoa = NienKhoa.objects.order_by('-TenNienKhoa').first()
+        self.latest_nien_khoa_id = latest_nien_khoa.id if latest_nien_khoa else None
+
     class Meta:
         model = LopHoc
         fields = [
@@ -31,10 +38,14 @@ class LopHocSerializer(serializers.ModelSerializer):
             'IDKhoi', 'TenKhoi', 
             'IDNienKhoa', 'TenNienKhoa', 
             'IDToHop', 'TenToHop',
-            'MonHoc'
+            'MonHoc', 'is_editable'
         ]
         read_only_fields = ['SiSo']
 
+    def get_is_editable(self, obj):
+        # Lớp có thể sửa/xóa nếu thuộc niên khóa mới nhất
+        return obj.IDNienKhoa_id == self.latest_nien_khoa_id
+    
     def validate(self, data):
         nien_khoa = data.get('IDNienKhoa')
         ten_lop = data.get('TenLop')

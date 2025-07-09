@@ -1,15 +1,14 @@
 # students/views.py
 
 from rest_framework import generics, status, filters
-from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
-from accounts.permissions import IsBGH, IsGiaoVu, IsGiaoVien # BGH cũng có quyền
-# THAY ĐỔI: Nếu bạn có permission IsGiaoVu, hãy import nó
-# from accounts.permissions import IsGiaoVu
+from accounts.permissions import IsBGH, IsGiaoVu, IsGiaoVien
+
 from .models import HocSinh
 from .serializers import HocSinhSerializer
 
-# Import các serializer và model từ các app khác cho mục đích lọc dropdown
+
 from configurations.models import NienKhoa
 from configurations.serializers import NienKhoaSerializer
 from classes.models import Khoi
@@ -19,7 +18,7 @@ from django.db.models import Avg, Subquery, OuterRef, FloatField, CharField
 from django.db.models.functions import Round
 from .serializers import HocSinhSerializer, TraCuuHocSinhSerializer
 from grading.models import DiemSo, HocKy
-from classes.models import LopHoc
+from classes.models import LopHoc, LopHoc_HocSinh
 
 class HocSinhListCreateView(generics.ListCreateAPIView):
     queryset = HocSinh.objects.select_related('IDNienKhoaTiepNhan', 'KhoiDuKien').all()
@@ -44,16 +43,31 @@ class HocSinhListCreateView(generics.ListCreateAPIView):
             
         return queryset
 
+
 class HocSinhDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = HocSinh.objects.select_related('IDNienKhoaTiepNhan', 'KhoiDuKien').all()
     serializer_class = HocSinhSerializer
-    # THAY ĐỔI: Quyền cho Giáo Vụ (và BGH nếu muốn)
-    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu] # Hoặc [IsAuthenticated, IsBGH | IsGiaoVu]
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu]
+
+    def _check_student_assigned(self, instance):
+        """Kiểm tra xem học sinh đã được phân lớp hay chưa."""
+        if LopHoc_HocSinh.objects.filter(IDHocSinh=instance).exists():
+            raise PermissionDenied("Không thể sửa/xóa học sinh đã được phân lớp.")
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        
+        if 'IDNienKhoaTiepNhan' in serializer.validated_data and \
+           serializer.validated_data['IDNienKhoaTiepNhan'] != instance.IDNienKhoaTiepNhan and \
+           LopHoc_HocSinh.objects.filter(IDHocSinh=instance).exists():
+           raise PermissionDenied("Không thể thay đổi niên khóa của học sinh đã được phân lớp.")
+        
+        super().perform_update(serializer)
+
 
     def perform_destroy(self, instance):
-        # Kiểm tra ràng buộc khi xóa học sinh (nếu học sinh có liên quan đến các bảng khác)
-        # Ví dụ: HocSinh.lop_hoc_list.exists(), HocSinh.diemso_set.exists()
-        # Nếu có các ràng buộc PROTECT ở các model khác, Django sẽ tự raise lỗi
+        # Gọi hàm kiểm tra trước khi xóa
+        self._check_student_assigned(instance)
         super().perform_destroy(instance)
 
 

@@ -1,10 +1,30 @@
-/* src/pages/GiaoVu/LapDanhSachLop/components/lapDanhSachLop.css */
-.dual-listbox {
-    height: 400px; /* Hoặc chiều cao bạn muốn */
-    overflow-y: auto;
+/* Đảm bảo modal body chiếm hết không gian còn lại */
+.modal-body {
+    overflow-y: hidden; /* Ngăn cuộn ở body của modal */
 }
 
-/* Thêm vào để con trỏ thay đổi khi di chuột qua hàng của bảng */
-.table-responsive.dual-listbox tbody tr {
+/* Cho phép bảng tự động co giãn theo chiều cao */
+.dual-listbox-table {
+    user-select: none; 
+}
+
+.dual-listbox-table tbody tr {
     cursor: pointer;
+}
+
+.dual-listbox-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Phần quan trọng: làm cho table-responsive lấp đầy không gian */
+.table-responsive.flex-grow-1 {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto; /* Thêm thanh cuộn cho bảng nếu cần */
+}
+
+.table-responsive.flex-grow-1 .table {
+    flex-grow: 1;
+    margin-bottom: 0;
 }

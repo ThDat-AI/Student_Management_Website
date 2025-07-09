@@ -4,16 +4,19 @@ from rest_framework import serializers
 from .models import HocSinh
 # THÊM CÁC IMPORT NÀY
 from configurations.models import NienKhoa, ThamSo
-from classes.models import Khoi
+from classes.models import LopHoc_HocSinh
 from datetime import date
 
 class HocSinhSerializer(serializers.ModelSerializer):
     TenNienKhoaTiepNhan = serializers.CharField(source='IDNienKhoaTiepNhan.TenNienKhoa', read_only=True)
     TenKhoiDuKien = serializers.CharField(source='KhoiDuKien.TenKhoi', read_only=True)
-
+    is_deletable = serializers.SerializerMethodField()
+    
     class Meta:
         model = HocSinh
-        fields = '__all__'
+        fields = ['id', 'Ho', 'Ten', 'GioiTinh', 'NgaySinh', 'DiaChi', 'Email', 
+                  'IDNienKhoaTiepNhan', 'TenNienKhoaTiepNhan', 
+                  'KhoiDuKien', 'TenKhoiDuKien', 'is_deletable']
         extra_kwargs = {
             'Email': {
                 'error_messages': {
@@ -22,6 +25,10 @@ class HocSinhSerializer(serializers.ModelSerializer):
             }
         }
 
+    def get_is_deletable(self, obj):
+        # Học sinh có thể bị xóa nếu chưa tồn tại trong bảng LopHoc_HocSinh
+        return not LopHoc_HocSinh.objects.filter(IDHocSinh=obj).exists()
+    
     def validate_NgaySinh(self, value):
         if value and value > date.today():
             raise serializers.ValidationError("Ngày sinh không được lớn hơn ngày hiện tại.")
