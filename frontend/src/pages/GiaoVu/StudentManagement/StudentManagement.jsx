@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+// StudentManagement.jsx
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { Container, Row, Col, Button, Form, Card, Spinner, InputGroup, Dropdown, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Button, Form, Card, Spinner, InputGroup, Alert } from 'react-bootstrap';
 import { FaPlus, FaSearch, FaUserGraduate, FaFilter } from 'react-icons/fa';
 import api from '../../../api/index';
 import { toast } from 'react-toastify';
@@ -10,407 +12,238 @@ import confirmDelete from '../../../components/ConfirmDelete';
 import StudentModal from './components/StudentModal';
 import StudentTable from './components/StudentTable';
 
+const parseApiError = (error) => {
+    const errorData = error.response?.data;
+    if (!errorData) return "Lỗi không xác định. Vui lòng kiểm tra kết nối mạng.";
+    if (errorData.detail) return errorData.detail;
+    const firstKey = Object.keys(errorData)[0];
+    if (firstKey && Array.isArray(errorData[firstKey]) && errorData[firstKey].length > 0) return errorData[firstKey][0];
+    if (Array.isArray(errorData) && errorData.length > 0) return errorData[0];
+    return "Thao tác thất bại. Vui lòng thử lại.";
+};
+
 const StudentManagement = () => {
     const [students, setStudents] = useState([]);
+    const [nienKhoas, setNienKhoas] = useState([]);
     const [khois, setKhois] = useState([]);
+    const [isFetchingFilters, setIsFetchingFilters] = useState(true);
+    const [isFetchingStudents, setIsFetchingStudents] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
-    const [filterKhoi, setFilterKhoi] = useState('');
-
-    const [nienKhoas, setNienKhoas] = useState([]);
-    const [selectedNienKhoaId, setSelectedNienKhoaId] = useState(null);
+    // KEY FIX 1: Khởi tạo state là null để chờ dữ liệu
+    const [selectedNienKhoaId, setSelectedNienKhoaId] = useState(null); 
     const [currentNienKhoaId, setCurrentNienKhoaId] = useState(null);
-
-    const [isInitializing, setIsInitializing] = useState(true);
-    const [isFetchingStudents, setIsFetchingStudents] = useState(false);
-    const [isReady, setIsReady] = useState(false);
-
+    const [filterKhoi, setFilterKhoi] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('create');
     const [selectedStudent, setSelectedStudent] = useState(null);
-
-    const abortControllerRef = useRef(null);
-    const lastFetchParamsRef = useRef(null);
     const isComponentMountedRef = useRef(true);
-
     const { setPageTitle } = useLayout();
+    const isViewingCurrentNienKhoa = selectedNienKhoaId === currentNienKhoaId && !!selectedNienKhoaId;
 
     useEffect(() => {
-        return () => {
-            isComponentMountedRef.current = false;
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
-    }, []);
-
-    const isViewingCurrentNienKhoa = useMemo(() =>
-        selectedNienKhoaId === currentNienKhoaId,
-        [selectedNienKhoaId, currentNienKhoaId]
-    );
-
-    useEffect(() => {
+        isComponentMountedRef.current = true;
         document.title = "Quản lý học sinh";
         setPageTitle("Quản lý học sinh");
+        return () => { isComponentMountedRef.current = false; };
     }, [setPageTitle]);
 
     useEffect(() => {
-        const initializeData = async () => {
+        const fetchFilters = async () => {
+            setIsFetchingFilters(true);
             try {
-                setIsInitializing(true);
                 const [nienKhoasRes, khoisRes] = await Promise.all([
-                    api.get('/api/students/filters/nienkhoa/'),
-                    api.get('/api/students/filters/khoi/')
+                    api.get('/api/students/filters/nienkhoa/'), 
+                    api.get('/api/students/filters/khoi/'),     
                 ]);
-
                 if (!isComponentMountedRef.current) return;
-
+                
                 const fetchedNienKhoas = nienKhoasRes.data;
-                const fetchedKhois = khoisRes.data;
-
                 setNienKhoas(fetchedNienKhoas);
-                setKhois(fetchedKhois);
-
+                setKhois(khoisRes.data);
+                
+                // KEY FIX 2: Tìm và tự động chọn niên khóa hiện hành
                 const current = fetchedNienKhoas.find(nk => nk.is_current);
-                const initialNienKhoaId = current?.id || fetchedNienKhoas[0]?.id || null;
-
-                setCurrentNienKhoaId(current?.id || null);
-                setSelectedNienKhoaId(initialNienKhoaId);
-
-                if (initialNienKhoaId) {
-                    await loadStudents({
-                        nien_khoa_id: initialNienKhoaId,
-                    });
+                if (current) {
+                    setCurrentNienKhoaId(current.id);
+                    setSelectedNienKhoaId(current.id);
+                } else if (fetchedNienKhoas.length > 0) {
+                    // Fallback: chọn niên khóa đầu tiên nếu không có niên khóa hiện hành
+                    setSelectedNienKhoaId(fetchedNienKhoas[0].id);
                 }
-
-                setIsReady(true);
-
             } catch (err) {
-                console.error('Initialize error:', err);
-                toast.error("Không thể tải dữ liệu cần thiết cho trang.");
+                if (isComponentMountedRef.current) toast.error("Không thể tải dữ liệu cần thiết cho trang.");
             } finally {
-                if (isComponentMountedRef.current) {
-                    setIsInitializing(false);
-                }
+                if (isComponentMountedRef.current) setIsFetchingFilters(false);
             }
         };
-
-        initializeData();
-    }, []);
-
-    const loadStudents = useCallback(async (params) => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        const currentFetchParams = { nien_khoa_id: params.nien_khoa_id };
-        const paramsKey = JSON.stringify(currentFetchParams);
-        if (lastFetchParamsRef.current === paramsKey) {
-            return;
-        }
-        lastFetchParamsRef.current = paramsKey;
-
-        abortControllerRef.current = new AbortController();
-
-        try {
-            setIsFetchingStudents(true);
-
-            const res = await api.get('/api/students/hocsinh/', {
-                params: { nien_khoa_id: params.nien_khoa_id },
-                signal: abortControllerRef.current.signal
-            });
-
-            if (!isComponentMountedRef.current) return;
-
-            const newStudents = res.data;
-            setStudents(newStudents);
-
-        } catch (err) {
-            if (err.name !== 'AbortError' && isComponentMountedRef.current) {
-                console.error('Load students error:', err);
-                toast.error("Không thể tải danh sách học sinh.");
-                setStudents([]);
-            }
-        } finally {
-            if (isComponentMountedRef.current) {
-                setIsFetchingStudents(false);
-            }
-        }
+        fetchFilters();
     }, []);
 
     useEffect(() => {
-        if (!isReady || !selectedNienKhoaId) return;
-
-        setSearchTerm('');
-        setFilterKhoi('');
-        loadStudents({ nien_khoa_id: selectedNienKhoaId });
-    }, [selectedNienKhoaId, isReady, loadStudents]);
-
-    const filteredAndSearchedStudents = useMemo(() => {
-        let tempStudents = [...students];
-
-        if (debouncedSearchTerm) {
-            const lowercasedSearchTerm = debouncedSearchTerm.toLowerCase();
-            tempStudents = tempStudents.filter(student =>
-                (student.Ho?.toLowerCase().includes(lowercasedSearchTerm) ||
-                 student.Ten?.toLowerCase().includes(lowercasedSearchTerm) ||
-                 student.Email?.toLowerCase().includes(lowercasedSearchTerm) ||
-                 student.MaHocSinh?.toLowerCase().includes(lowercasedSearchTerm))
-            );
+        // Chỉ fetch khi đã có selectedNienKhoaId
+        if (!selectedNienKhoaId) {
+            setStudents([]);
+            return;
         }
-
-        if (filterKhoi) {
-            tempStudents = tempStudents.filter(student =>
-                student.KhoiDuKien === Number(filterKhoi)
-            );
-        }
-
-        return tempStudents;
-    }, [students, debouncedSearchTerm, filterKhoi]);
-
-    const handleFilterChange = useCallback((e) => {
-        const newValue = Number(e.target.value);
-        setSelectedNienKhoaId(newValue);
-    }, []);
-
-    const handleShowModal = useCallback((type, student = null) => {
+        const fetchStudents = async () => {
+            setIsFetchingStudents(true);
+            try {
+                const params = { search: debouncedSearchTerm, nien_khoa_id: selectedNienKhoaId, khoi_id: filterKhoi || null };
+                const res = await api.get('/api/students/hocsinh/', { params });
+                if (isComponentMountedRef.current) setStudents(res.data);
+            } catch (err) {
+                if (isComponentMountedRef.current) {
+                    toast.error("Không thể tải danh sách học sinh.");
+                    setStudents([]);
+                }
+            } finally {
+                if (isComponentMountedRef.current) setIsFetchingStudents(false);
+            }
+        };
+        fetchStudents();
+    }, [debouncedSearchTerm, filterKhoi, selectedNienKhoaId]);
+    
+    const handleShowModal = (type, student = null) => {
         setModalType(type);
         setSelectedStudent(student);
         setShowModal(true);
-    }, []);
+    };
 
-    const handleCloseModal = useCallback(() => {
+    const handleCloseModal = () => {
         setShowModal(false);
         setSelectedStudent(null);
-    }, []);
-
-    const handleSubmitInModal = useCallback(async (formData, studentId) => {
-        handleCloseModal();
-
+    };
+    
+    const handleSubmitInModal = async (formData, studentId) => {
+        let payload;
         if (modalType === 'create') {
-            const tempStudent = {
-                id: `temp-${Date.now()}`,
-                ...formData,
-                is_deletable: true,
-                TenNienKhoaTiepNhan: nienKhoas.find(nk => nk.id === formData.IDNienKhoaTiepNhan)?.TenNienKhoa,
-                TenKhoiDuKien: khois.find(k => k.id === Number(formData.KhoiDuKien))?.TenKhoi,
-                _isOptimistic: true
-            };
-
+            payload = { ...formData, IDNienKhoaTiepNhan: currentNienKhoaId, KhoiDuKien: Number(formData.KhoiDuKien) };
+        } else {
+            payload = { ...formData, KhoiDuKien: Number(formData.KhoiDuKien) };
+        }
+        
+        const originalStudents = students;
+        let tempId = `temp-${Date.now()}`;
+        if (modalType === 'create') {
+            const tempStudent = { ...payload, id: tempId, is_deletable: true, _isOptimistic: true, TenNienKhoaTiepNhan: nienKhoas.find(nk => nk.id === payload.IDNienKhoaTiepNhan)?.TenNienKhoa, TenKhoiDuKien: khois.find(k => k.id === payload.KhoiDuKien)?.TenKhoi };
             setStudents(prev => [tempStudent, ...prev]);
+        } else {
+            tempId = studentId;
+            setStudents(prev => prev.map(s => s.id === studentId ? { ...s, ...payload, _isOptimistic: true } : s));
+        }
 
-            try {
-                const res = await api.post('/api/students/hocsinh/', formData);
-
-                if (!isComponentMountedRef.current) return;
-
-                const newStudent = res.data;
-                setStudents(prev => prev.map(s =>
-                    s.id === tempStudent.id ? { ...newStudent, _isOptimistic: false } : s
-                ));
-
-                toast.success('Thêm học sinh thành công!');
-
-            } catch (err) {
-                if (!isComponentMountedRef.current) return;
-
-                setStudents(prev => prev.filter(s => s.id !== tempStudent.id));
-                toast.error(err.response?.data?.detail || "Thêm mới thất bại.");
+        try {
+            let res;
+            if (modalType === 'create') {
+                res = await api.post('/api/students/hocsinh/', payload);
+            } else {
+                res = await api.patch(`/api/students/hocsinh/${studentId}/`, payload);
             }
 
-        } else if (modalType === 'edit') {
-            const originalStudent = students.find(s => s.id === studentId);
-            const updatedStudent = {
-                ...originalStudent,
-                ...formData,
-                TenKhoiDuKien: khois.find(k => k.id === Number(formData.KhoiDuKien))?.TenKhoi,
-                _isOptimistic: true
-            };
-
-            setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
-
-            try {
-                await api.patch(`/api/students/hocsinh/${studentId}/`, formData);
-
-                if (!isComponentMountedRef.current) return;
-
-                setStudents(prev => prev.map(s =>
-                    s.id === studentId ? { ...updatedStudent, _isOptimistic: false } : s
-                ));
-
-                toast.success('Cập nhật thành công!');
-
-            } catch (err) {
-                if (!isComponentMountedRef.current) return;
-
-                setStudents(prev => prev.map(s => s.id === studentId ? originalStudent : s));
-                toast.error(err.response?.data?.detail || "Cập nhật thất bại.");
+            if (isComponentMountedRef.current) {
+                setStudents(prev => prev.map(s => (s.id === tempId ? res.data : s)));
+                toast.success(modalType === 'create' ? 'Thêm học sinh thành công!' : 'Cập nhật thành công!');
+                handleCloseModal();
+            }
+        } catch (err) {
+            if (isComponentMountedRef.current) {
+                toast.error(parseApiError(err));
+                setStudents(originalStudents); // Rollback
             }
         }
-    }, [modalType, students, nienKhoas, khois, handleCloseModal]);
+    };
 
-    const handleDelete = useCallback(async (student) => {
+    const handleDelete = async (student) => {
         if (!isViewingCurrentNienKhoa || !student.is_deletable) {
             toast.warn("Không thể xóa học sinh này.");
             return;
         }
-
         const isConfirmed = await confirmDelete(`Bạn có chắc muốn xóa học sinh "${student.Ho} ${student.Ten}"?`);
         if (!isConfirmed) return;
-
-        setStudents(prev => prev.map(s =>
-            s.id === student.id ? { ...s, _isDeleting: true } : s
-        ));
-
+        const originalStudents = students;
+        setStudents(prev => prev.filter(s => s.id !== student.id));
         try {
             await api.delete(`/api/students/hocsinh/${student.id}/`);
-
-            if (!isComponentMountedRef.current) return;
-
-            setStudents(prev => prev.filter(s => s.id !== student.id));
-
             toast.success('Xóa học sinh thành công!');
-
         } catch (err) {
-            if (!isComponentMountedRef.current) return;
-
-            setStudents(prev => prev.map(s =>
-                s.id === student.id ? { ...s, _isDeleting: false } : s
-            ));
-            toast.error(err.response?.data?.detail || "Xóa thất bại.");
+            toast.error(parseApiError(err));
+            setStudents(originalStudents);
         }
-    }, [isViewingCurrentNienKhoa]);
-
-    if (isInitializing) {
+    };
+    
+    // KEY FIX 3: Hiển thị một spinner duy nhất trong khi khởi tạo
+    if (isFetchingFilters) {
         return (
-            <Container fluid className="py-4 text-center">
+            <Container fluid className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
                 <Spinner animation="border" variant="primary" />
-                <p className="mt-2 text-muted">Đang tải cấu hình...</p>
+                <p className="ms-3 mb-0 text-muted">Đang tải cấu hình...</p>
             </Container>
         );
     }
-
-    if (!selectedNienKhoaId) {
-        return (
-            <Container fluid className="py-4">
-                <Alert variant="danger">
-                    Không tìm thấy niên khóa nào trong hệ thống. Vui lòng tạo niên khóa trước.
-                </Alert>
-            </Container>
-        );
-    }
-
+    
     return (
         <Container fluid className="py-4">
             <Row className="justify-content-between align-items-center mb-4">
                 <Col xs={12} md={6} lg={4}>
                     <h2 className="h4 mb-2 mb-md-0 d-flex align-items-center">
-                        <FaUserGraduate className="me-2 text-primary" />
-                        Quản lý học sinh
+                        <FaUserGraduate className="me-2 text-primary" /> Quản lý học sinh
                     </h2>
                 </Col>
                 <Col xs={12} md={6} lg={8} className="d-flex flex-wrap justify-content-end gap-2">
-                    <InputGroup className="flex-grow-1" style={{ maxWidth: '300px' }}>
+                    <InputGroup style={{ maxWidth: '300px' }}>
                         <InputGroup.Text><FaSearch /></InputGroup.Text>
-                        <Form.Control
-                            type="search"
-                            placeholder="Tìm theo tên, email..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                        <Form.Control type="search" placeholder="Tìm theo tên, email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </InputGroup>
-
-                    <Dropdown as={InputGroup} className="flex-grow-1" style={{ maxWidth: '240px' }}>
-                        <InputGroup.Text><FaFilter /></InputGroup.Text>
-                        <Form.Select value={selectedNienKhoaId} onChange={handleFilterChange}>
-                            {nienKhoas.map(nk => (
-                                <option key={nk.id} value={nk.id}>
-                                    {nk.TenNienKhoa}{nk.is_current ? ' (Hiện hành)' : ''}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    </Dropdown>
-
-                    <Dropdown as={InputGroup} className="flex-grow-1" style={{ maxWidth: '220px' }}>
-                        <InputGroup.Text><FaFilter /></InputGroup.Text>
-                        <Form.Select value={filterKhoi} onChange={(e) => setFilterKhoi(e.target.value)}>
-                            <option value="">Lọc theo khối</option>
-                            {khois.map(khoi => (
-                                <option key={khoi.id} value={khoi.id}>
-                                    {khoi.TenKhoi}
-                                </option>
-                            ))}
-                        </Form.Select>
-                    </Dropdown>
-
-                    <Button
-                        variant="primary"
-                        onClick={() => handleShowModal('create')}
-                        disabled={!isViewingCurrentNienKhoa}
-                    >
+                    {/* KEY FIX 4: value sẽ là `selectedNienKhoaId || ''` để xử lý trường hợp null ban đầu */}
+                    <Form.Select style={{ maxWidth: '240px' }} value={selectedNienKhoaId || ''} onChange={(e) => setSelectedNienKhoaId(Number(e.target.value) || '')}>
+                        {/* Không cần option "chọn niên khóa" nữa */}
+                        {nienKhoas.map(nk => (<option key={nk.id} value={nk.id}>{nk.TenNienKhoa}{nk.is_current ? ' (Hiện hành)' : ''}</option>))}
+                    </Form.Select>
+                    <Form.Select style={{ maxWidth: '220px' }} value={filterKhoi} onChange={(e) => setFilterKhoi(e.target.value)} disabled={!selectedNienKhoaId}>
+                        <option value="">Lọc theo khối</option>
+                        {khois.map(khoi => (<option key={khoi.id} value={khoi.id}>{khoi.TenKhoi}</option>))}
+                    </Form.Select>
+                    <Button variant="primary" onClick={() => handleShowModal('create')} disabled={!isViewingCurrentNienKhoa}>
                         <FaPlus className="me-2" /> Thêm
                     </Button>
                 </Col>
             </Row>
-
-            {!isInitializing && !isFetchingStudents && !isViewingCurrentNienKhoa && (
-                <Alert variant="warning">
+            
+            {!isViewingCurrentNienKhoa && selectedNienKhoaId && (
+                 <Alert variant="warning">
                     Bạn đang xem dữ liệu của một niên khóa cũ. Mọi thao tác thêm, sửa, xóa đều bị vô hiệu hóa.
                 </Alert>
             )}
 
             <Card className="shadow-sm">
                 <Card.Body className="p-0">
-                    <div style={{ minHeight: '200px', position: 'relative' }}>
-                        {(isFetchingStudents && filteredAndSearchedStudents.length === 0) ? (
-                            <div className="text-center py-5">
-                                <Spinner animation="border" />
-                                <p className="mt-2 text-muted">Đang tải danh sách học sinh...</p>
-                            </div>
-                        ) : (
-                            <>
-                                {isFetchingStudents && (
-                                    <div className="position-absolute top-0 end-0 p-2" style={{ zIndex: 10 }}>
-                                        <Spinner animation="border" size="sm" />
-                                    </div>
-                                )}
-
-                                <StudentTable
-                                    students={filteredAndSearchedStudents}
-                                    onEdit={handleShowModal}
-                                    onDelete={handleDelete}
-                                    isReadOnly={!isViewingCurrentNienKhoa}
-                                />
-                            </>
-                        )}
-                    </div>
+                    {isFetchingStudents ? (
+                        <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>
+                    ) : (
+                        <StudentTable students={students} onEdit={handleShowModal} onDelete={handleDelete} isReadOnly={!isViewingCurrentNienKhoa} />
+                    )}
                 </Card.Body>
-
-                {!isFetchingStudents && filteredAndSearchedStudents.length === 0 && (
-                    <Card.Footer className="text-center text-muted p-3">
+                { !isFetchingStudents && selectedNienKhoaId && students.length === 0 && (
+                     <Card.Footer className="text-center text-muted p-3">
                         Không tìm thấy học sinh nào phù hợp.
                         {isViewingCurrentNienKhoa && !searchTerm && !filterKhoi && (
-                            <Button
-                                variant="link"
-                                onClick={() => handleShowModal('create')}
-                                className="p-0 ms-1"
-                            >
-                                Thêm học sinh mới?
-                            </Button>
+                            <Button variant="link" onClick={() => handleShowModal('create')} className="p-0 ms-1">Thêm học sinh mới?</Button>
                         )}
                     </Card.Footer>
                 )}
             </Card>
 
             {showModal && (
-                <StudentModal
-                    show={showModal}
-                    onHide={handleCloseModal}
-                    modalType={modalType}
-                    studentData={selectedStudent}
-                    onSubmit={handleSubmitInModal}
+                <StudentModal 
+                    show={showModal} 
+                    onHide={handleCloseModal} 
+                    modalType={modalType} 
+                    studentData={selectedStudent} 
+                    onSubmit={handleSubmitInModal} 
                     nienKhoas={nienKhoas}
                     khois={khois}
+                    currentNienKhoaId={currentNienKhoaId}
                 />
             )}
         </Container>

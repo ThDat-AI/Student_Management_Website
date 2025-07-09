@@ -35,7 +35,6 @@ import QuanLyMonHoc from "./pages/BGH/QuanLyMonHoc";
 
 // Giao Vu pages
 import GiaoVuDashboard from "./pages/GiaoVu/GiaoVuDashboard";
-import QuanLyHocSinhPage from "./pages/GiaoVu/StudentManagement/QuanLyHocSinhpage";
 import QuanLyDanhSachLopPage from "./pages/GiaoVu/LapDanhSachLop/QuanLyDanhSachLopPage";
 import StudentManagement from "./pages/GiaoVu/StudentManagement/StudentManagement";
 import QuanLyLopHoc from "./pages/GiaoVu/QuanLyLopHoc/QuanLyLopHoc";
@@ -99,7 +98,6 @@ function App() {
                   <Route path="giaovu" element={<GiaoVuDashboard />} />
                   
                   {/* Nhóm Quản lý học sinh */}
-                  <Route path="giaovu/hoc-sinh" element={<QuanLyHocSinhPage />} />
                   <Route path="giaovu/hoc-sinh/tiep-nhan" element={<StudentManagement />} />
                   <Route path="giaovu/hoc-sinh/tra-cuu" element={<TraCuuHocSinh />} />
                   

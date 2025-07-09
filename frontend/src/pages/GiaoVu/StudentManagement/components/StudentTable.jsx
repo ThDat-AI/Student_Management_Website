@@ -1,3 +1,5 @@
+// StudentTable.jsx
+
 import React from 'react';
 import { Table, Button, Spinner } from 'react-bootstrap';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
@@ -20,15 +22,15 @@ const StudentTable = ({ students, onEdit, onDelete, isReadOnly }) => {
                 </thead>
                 <tbody>
                     {students.map((student, index) => (
-                        <tr key={student.id} style={{ opacity: student.id.toString().startsWith('temp-') ? 0.5 : 1 }}>
-                            <td>{student.id.toString().startsWith('temp-') ? <Spinner size="sm" /> : index + 1}</td>
+                        <tr key={student.id} style={{ opacity: student._isOptimistic ? 0.5 : 1 }}>
+                            <td>{student._isOptimistic ? <Spinner size="sm" /> : index + 1}</td>
                             <td>
                                 <strong>{student.Ho} {student.Ten}</strong>
                                 <br />
                                 <small className="text-muted">{student.DiaChi}</small>
                             </td>
                             <td>{student.GioiTinh}</td>
-                            <td>{new Date(student.NgaySinh).toLocaleDateString('vi-VN')}</td>
+                            <td>{student.NgaySinh ? new Date(student.NgaySinh).toLocaleDateString('vi-VN') : 'N/A'}</td>
                             <td>{student.Email || 'N/A'}</td>
                             <td>{student.TenNienKhoaTiepNhan}</td>
                             <td>{student.TenKhoiDuKien || <span className="text-muted">Chưa có</span>}</td>

@@ -21,7 +21,7 @@ const GiaoVuDashboard = () => {
       description: "Tiếp nhận và tra cứu thông tin học sinh.", 
       icon: <FaUsers />, 
       color: "primary", 
-      path: "/giaovu/hoc-sinh"
+      path: "/giaovu/hoc-sinh/tiep-nhan"
     },
     { 
       title: "Quản lý lớp học", 
