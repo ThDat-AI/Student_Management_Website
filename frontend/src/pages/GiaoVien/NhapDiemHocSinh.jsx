@@ -17,69 +17,43 @@ const getNumericValue = (formattedValue) => {
 };
 
 // HÀM HELPER: Xử lý input để luôn hiển thị dạng x.xx và giới hạn 0-10
-// HÀM HELPER: Xử lý input để luôn hiển thị dạng x.xx và giới hạn 0-10
 const handleNumericInput = (currentValue, newInput) => {
     if (newInput === '') return '';
-    
-    // Chỉ cho phép số và dấu chấm
     const cleanInput = newInput.replace(/[^0-9.]/g, '');
-    
-    // Không cho phép nhiều hơn 1 dấu chấm
     const parts = cleanInput.split('.');
     if (parts.length > 2) {
         return parts[0] + '.' + parts.slice(1).join('');
     }
-    
-    // Nếu có dấu chấm
     if (cleanInput.includes('.')) {
         const [integerPart, decimalPart] = cleanInput.split('.');
-        
-        // Giới hạn phần nguyên tối đa 2 chữ số và phần thập phân tối đa 2 chữ số
         const limitedInteger = integerPart.slice(0, 2);
         const limitedDecimal = decimalPart ? decimalPart.slice(0, 2) : '';
-        
         const result = limitedInteger + '.' + limitedDecimal;
-        
-        // Kiểm tra giá trị không vượt quá 10
         const numValue = parseFloat(limitedInteger + '.' + (limitedDecimal || '0'));
         if (numValue > 10) {
             return '10.00';
         }
-        
         return result;
     }
-    
-    // Nếu không có dấu chấm, xử lý từng ký tự
     if (cleanInput.length === 1) {
-        // Ký tự đầu tiên: 0-9
         return cleanInput;
     } else if (cleanInput.length === 2) {
-        // Ký tự thứ hai
         const firstDigit = cleanInput[0];
         const secondDigit = cleanInput[1];
-        
         if (firstDigit === '1' && secondDigit <= '0') {
-            // Trường hợp 10 -> giữ nguyên
             return cleanInput;
         } else if (firstDigit === '1' && secondDigit > '0') {
-            // Trường hợp 12, 13, ... -> chuyển thành 1.2, 1.3, ...
             return firstDigit + '.' + secondDigit;
         } else if (firstDigit >= '2') {
-            // Trường hợp 23, 45, ... -> chuyển thành 2.3, 4.5, ...
             return firstDigit + '.' + secondDigit;
         } else {
-            // Trường hợp 01, 02, ... -> chuyển thành 0.1, 0.2, ...
             return firstDigit + '.' + secondDigit;
         }
     } else {
-        // Nhiều hơn 2 ký tự, cắt bớt
         const limitedInput = cleanInput.slice(0, 2);
-        
         if (limitedInput === '10') {
             return '10';
         }
-        
-        // Tự động thêm dấu chấm
         const firstDigit = limitedInput[0];
         const secondDigit = limitedInput[1];
         return firstDigit + '.' + secondDigit;
@@ -95,14 +69,13 @@ const isValidDiem = (value) => {
 
 
 const NhapDiemHocSinh = () => {
-    // Chỉ cần lọc theo lớp, môn, học kỳ. Niên khóa được xác định tự động.
     const [filters, setFilters] = useState({ lopHoc: "", monHoc: "", hocKy: "" });
     const [latestNienKhoaInfo, setLatestNienKhoaInfo] = useState(null);
     const [dropdowns, setDropdowns] = useState({ lopHocList: [], monHocList: [], hocKyList: [] });
     const [hocSinhData, setHocSinhData] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [canEditScores, setCanEditScores] = useState(true); // State điều khiển quyền sửa
+    const [canEditScores, setCanEditScores] = useState(true);
     const [thamSo, setThamSo] = useState(null);
     const [diemDatMon, setDiemDatMon] = useState(5.0);
     const [invalidInputs, setInvalidInputs] = useState({});
@@ -118,7 +91,6 @@ const NhapDiemHocSinh = () => {
         const fetchInitialData = async () => {
             setLoading(true);
             try {
-                // Lấy thông tin của niên khóa mới nhất để lấy ID và các cài đặt quyền
                 const res = await api.get('/api/configurations/quydinh/latest/');
                 const latestQuyDinh = res.data;
 
@@ -147,13 +119,16 @@ const NhapDiemHocSinh = () => {
     
     // 2. Fetch môn học khi lớp học thay đổi
     useEffect(() => {
+        // Tối ưu: Chỉ fetch dữ liệu, không set lại filter ở đây
         const fetchMonHoc = async () => {
             if (filters.lopHoc) {
                 try {
                     const res = await api.get(`/api/classes/monhoc-theo-lop/?lop_hoc_id=${filters.lopHoc}`);
                     setDropdowns(prev => ({ ...prev, monHocList: res.data || [] }));
-                } catch (err) { toast.error("Lỗi khi tải danh sách môn học."); }
-                setFilters(prev => ({ ...prev, monHoc: "" }));
+                } catch (err) { 
+                    toast.error("Lỗi khi tải danh sách môn học."); 
+                    setDropdowns(prev => ({ ...prev, monHocList: [] })); // Đảm bảo reset nếu lỗi
+                }
             } else {
                 setDropdowns(prev => ({ ...prev, monHocList: [] }));
             }
@@ -178,7 +153,6 @@ const NhapDiemHocSinh = () => {
         }
         setLoading(true);
         try {
-            // API được gọi mà KHÔNG CÓ IDNienKhoa
             const res = await api.get("/api/grading/diemso/", { params: { IDLopHoc: lopHoc, IDMonHoc: monHoc, IDHocKy: hocKy } });
             const formattedData = (res.data || []).map(hs => ({
                 ...hs,
@@ -191,7 +165,7 @@ const NhapDiemHocSinh = () => {
             setHocSinhData([]);
         } finally {
             setLoading(false);
-            setIsEditing(false);
+            setIsEditing(false); // Đảm bảo thoát chế độ edit khi tải lại
         }
     }, [filters]);
 
@@ -238,6 +212,9 @@ const NhapDiemHocSinh = () => {
             return;
         }
 
+        // FIX 2: Chụp lại state của bộ lọc trước khi thực hiện hành động bất đồng bộ
+        const filtersAtSaveStart = { ...filters };
+
         setLoading(true);
         const promises = hocSinhData.map(hs =>
             api.post("/api/grading/diemso/cap-nhat/", {
@@ -256,10 +233,26 @@ const NhapDiemHocSinh = () => {
               success: 'Lưu điểm thành công!',
               error: 'Có lỗi xảy ra khi lưu điểm!'
             });
-            setIsEditing(false);
-            await fetchBangDiem(); // Tải lại dữ liệu mới sau khi lưu
+            
+            // FIX 2: Chỉ tải lại dữ liệu nếu người dùng vẫn đang ở cùng bộ lọc
+            // Nếu người dùng đã đổi lớp/môn trong lúc lưu, không làm gì cả
+            // để tránh ghi đè lên hành động mới của họ.
+            if (
+                filters.lopHoc === filtersAtSaveStart.lopHoc &&
+                filters.monHoc === filtersAtSaveStart.monHoc &&
+                filters.hocKy === filtersAtSaveStart.hocKy
+            ) {
+                setIsEditing(false);
+                await fetchBangDiem(); // Tải lại dữ liệu mới sau khi lưu
+            } else {
+                 // Nếu người dùng đã đổi bộ lọc, chỉ cần thoát chế độ chỉnh sửa.
+                 // useEffect của bộ lọc mới đã tự xử lý việc dọn dẹp/tải dữ liệu.
+                setIsEditing(false);
+            }
+
         } catch (err) {
-            toast.error("Lỗi: " + (err.response?.data?.detail || err.message));
+            // Toast promise đã xử lý hiển thị lỗi, chỉ log ra để debug nếu cần
+            console.error("Lỗi khi lưu điểm:", err);
         } finally {
             setLoading(false);
         }
@@ -297,6 +290,17 @@ const NhapDiemHocSinh = () => {
         }
     };
 
+    // FIX 1: Khi chọn lớp mới, reset luôn môn học và bảng điểm trong một hành động
+    const handleLopHocChange = (e) => {
+        const newLopHocId = e.target.value;
+        setFilters(prev => ({
+            ...prev,
+            lopHoc: newLopHocId,
+            monHoc: "" // Reset môn học ngay lập tức
+        }));
+        // Việc reset monHoc sẽ tự động kích hoạt useEffect để dọn dẹp hocSinhData
+    };
+
     return (
         <div className="dashboard-container">
             <Container fluid className="px-4 py-4">
@@ -315,7 +319,13 @@ const NhapDiemHocSinh = () => {
                     </Card.Header>
                     <Card.Body>
                         <Row className="mb-3 g-3">
-                            <Col md={4}><Form.Select value={filters.lopHoc} onChange={(e) => setFilters(prev => ({...prev, lopHoc: e.target.value}))} disabled={loading}><option value="">Chọn Lớp học</option>{dropdowns.lopHocList.map(item => <option key={item.id} value={item.id}>{item.TenLop}</option>)}</Form.Select></Col>
+                            {/* FIX 1: Sử dụng handler tùy chỉnh */}
+                            <Col md={4}>
+                                <Form.Select value={filters.lopHoc} onChange={handleLopHocChange} disabled={loading}>
+                                    <option value="">Chọn Lớp học</option>
+                                    {dropdowns.lopHocList.map(item => <option key={item.id} value={item.id}>{item.TenLop}</option>)}
+                                </Form.Select>
+                            </Col>
                             <Col md={4}><Form.Select value={filters.monHoc} onChange={(e) => setFilters(prev => ({...prev, monHoc: e.target.value}))} disabled={!filters.lopHoc}><option value="">Chọn Môn học</option>{dropdowns.monHocList.map(item => <option key={item.id} value={item.id}>{item.TenMonHoc}</option>)}</Form.Select></Col>
                             <Col md={4}><Form.Select value={filters.hocKy} onChange={(e) => setFilters(prev => ({...prev, hocKy: e.target.value}))} disabled={loading}><option value="">Chọn Học kỳ</option>{dropdowns.hocKyList.map(item => <option key={item.id} value={item.id}>{item.TenHocKy}</option>)}</Form.Select></Col>
                         </Row>
