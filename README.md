@@ -10,7 +10,7 @@ A full-stack web application for managing students, classes, and subjects. Built
 ---
 
 ## 👥 Project Members
-GROUP 24 - LECTOR: Nguyen Thi Xuan Huong
+GROUP 24 - LECTURER : Nguyen Thi Xuan Huong
 | Họ và Tên       | MSSV      | Vai Trò         |
 |------------------|-----------|-----------------|
 |    Lê Thành Thắng Đạt      | 23520251    | Leader |
