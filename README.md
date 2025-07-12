@@ -43,7 +43,7 @@ python manage.py runserver
 
 
 ```
-⚙️ Frontend Setup (React + Vite)
+⚙️ **Frontend Setup (React + Vite)**
 ```
 cd frontend
 npm install
@@ -51,7 +51,7 @@ npm run dev
 ```
 
 
-🌐 Deployment
+🌐 **Deployment**
 ```
 Backend: Railway
 Frontend: Vercel
