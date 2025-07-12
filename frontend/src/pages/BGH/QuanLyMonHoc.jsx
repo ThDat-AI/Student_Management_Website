@@ -17,9 +17,8 @@ const QuanLyMonHoc = () => {
   const [dsToHop, setDsToHop] = useState([]);
   
   const [selectedNienKhoa, setSelectedNienKhoa] = useState("");
-  const [currentNienKhoaId, setCurrentNienKhoaId] = useState(null); // <-- THÊM STATE MỚI
-  const [isCurrentNienKhoaSelected, setIsCurrentNienKhoaSelected] = useState(false); // <-- THÊM STATE MỚI
-
+  const [currentNienKhoaId, setCurrentNienKhoaId] = useState(null); 
+  const [isCurrentNienKhoaSelected, setIsCurrentNienKhoaSelected] = useState(false); 
   const [filterToHop, setFilterToHop] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
@@ -38,19 +37,19 @@ const QuanLyMonHoc = () => {
     setPageTitle("Quản lý Môn học");
     const fetchFilters = async () => {
       try {
-        // Sử dụng URL mới cho niên khóa
+        
         const [resNK, resTH] = await Promise.all([
           api.get("/api/subjects/nienkhoa/"),
           api.get("/api/subjects/tohop/")
         ]);
         
-        // <-- THAY ĐỔI LOGIC LẤY NIÊN KHÓA
+        
         setDsNienKhoa(resNK.data);
         const currentNK = resNK.data.find(nk => nk.is_current);
         if (currentNK) {
           setCurrentNienKhoaId(currentNK.id);
         }
-        // --> KẾT THÚC THAY ĐỔI
+        
 
         setDsToHop(resTH.data);
       } catch (error) {
@@ -61,7 +60,7 @@ const QuanLyMonHoc = () => {
     fetchFilters();
   }, [setPageTitle]);
 
-  // <-- THÊM useEffect ĐỂ CẬP NHẬT TRẠNG THÁI NIÊN KHÓA ĐƯỢC CHỌN
+  
   useEffect(() => {
     setIsCurrentNienKhoaSelected(
       !!selectedNienKhoa && !!currentNienKhoaId && parseInt(selectedNienKhoa) === currentNienKhoaId
@@ -96,7 +95,7 @@ const QuanLyMonHoc = () => {
   }, [fetchMonHoc]);
 
   const handleOpenModal = (mh = null) => {
-    // Chỉ cho phép mở modal nếu là niên khóa hiện tại
+    
     if (!isCurrentNienKhoaSelected) return;
 
     setFormError("");

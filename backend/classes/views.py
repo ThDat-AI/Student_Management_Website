@@ -82,7 +82,7 @@ class LopHocMonHocUpdateView(views.APIView):
         try:
             return LopHoc.objects.get(pk=pk)
         except LopHoc.DoesNotExist:
-            raise NotFound("Lớp học không tồn tại.") # Sửa để raise exception
+            raise NotFound("Lớp học không tồn tại.") 
 
     def post(self, request, pk):
         lop_hoc = self.get_lop_hoc(pk)
@@ -120,14 +120,14 @@ class LopHocMonHocUpdateView(views.APIView):
             )
         mon_hoc_qs = MonHoc.objects.filter(pk__in=monhoc_ids)
         
-        # Kiểm tra nhanh hơn: lấy tất cả niên khóa của các môn được chọn
+        
         nien_khoa_ids_of_selected_subjects = set(mon_hoc_qs.values_list('IDNienKhoa_id', flat=True))
         if len(nien_khoa_ids_of_selected_subjects) > 1 or (len(nien_khoa_ids_of_selected_subjects) == 1 and nien_khoa_lop_hoc.id not in nien_khoa_ids_of_selected_subjects):
              return Response({
                 "detail": f"Một hoặc nhiều môn học không thuộc niên khóa '{nien_khoa_lop_hoc.TenNienKhoa}'."},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        # Nếu tất cả các kiểm tra đều qua, gán môn học cho lớp
+        
         lop_hoc.MonHoc.set(mon_hoc_qs)
         
         return Response({"message": "Cập nhật môn học cho lớp thành công."}, status=status.HTTP_200_OK)
@@ -275,7 +275,7 @@ class XuatDanhSachHocSinhView(APIView):
         title_cell.font = title_font
         title_cell.alignment = center_alignment
 
-        ws.append([]) # Dòng trống
+        ws.append([]) 
         ws.append(['Niên khóa:', lop_hoc.IDNienKhoa.TenNienKhoa])
         ws['A3'].font = header_font
         ws.append(['Lớp:', lop_hoc.TenLop])
@@ -284,7 +284,7 @@ class XuatDanhSachHocSinhView(APIView):
         # === BỔ SUNG DÒNG SĨ SỐ ===
         ws.append(['Sĩ số:', f"{lop_hoc.SiSo} / {siso_toida}"])
         ws['A5'].font = header_font
-        ws.append([]) # Dòng trống
+        ws.append([]) 
 
         table_headers = ['STT', 'Họ và tên', 'Giới tính', 'Ngày sinh', 'Email', 'Địa chỉ']
         ws.append(table_headers)

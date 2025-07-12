@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from .models import HocSinh
-# THÊM CÁC IMPORT NÀY
+
 from configurations.models import NienKhoa, ThamSo
 from classes.models import LopHoc_HocSinh
 from datetime import date
@@ -26,7 +26,6 @@ class HocSinhSerializer(serializers.ModelSerializer):
         }
 
     def get_is_deletable(self, obj):
-        # Học sinh có thể bị xóa nếu chưa tồn tại trong bảng LopHoc_HocSinh
         return not LopHoc_HocSinh.objects.filter(IDHocSinh=obj).exists()
     
     def validate_NgaySinh(self, value):
@@ -34,10 +33,9 @@ class HocSinhSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ngày sinh không được lớn hơn ngày hiện tại.")
         return value
 
-    # === THÊM PHƯƠNG THỨC VALIDATE NÀY VÀO ===
+    
     def validate(self, attrs):
-        # Khi cập nhật (PATCH), attrs chỉ chứa các trường được gửi lên.
-        # Chúng ta cần lấy các trường không đổi từ instance hiện tại.
+        
         instance = self.instance
         
         # Lấy niên khóa và ngày sinh để kiểm tra
@@ -45,13 +43,13 @@ class HocSinhSerializer(serializers.ModelSerializer):
         ngay_sinh = attrs.get('NgaySinh', instance.NgaySinh if instance else None)
 
         if not nien_khoa:
-            # Lỗi này sẽ được bắt bởi `required=True` của model field, nhưng check lại cho chắc
+            
             raise serializers.ValidationError({'IDNienKhoaTiepNhan': 'Niên khóa tiếp nhận không được để trống.'})
 
         if not ngay_sinh:
             raise serializers.ValidationError({'NgaySinh': 'Ngày sinh không được để trống.'})
 
-        # --- Logic kiểm tra tuổi được chuyển từ model vào đây ---
+       
         try:
             thamso = ThamSo.objects.get(IDNienKhoa=nien_khoa)
         except ThamSo.DoesNotExist:
@@ -60,12 +58,12 @@ class HocSinhSerializer(serializers.ModelSerializer):
                 f"Vui lòng vào mục 'Quy định' để thiết lập."
             )
 
-        # Tính toán tuổi (sử dụng logic giống trong model)
+        # Tính toán tuổi 
         nien_khoa_start_year = int(nien_khoa.TenNienKhoa.split('-')[0])
         september_first = date(nien_khoa_start_year, 9, 1)
         calculated_age = september_first.year - ngay_sinh.year - ((september_first.month, september_first.day) < (ngay_sinh.month, ngay_sinh.day))
 
-        # Kiểm tra tuổi và ném lỗi serializers.ValidationError
+        # Kiểm tra tuổi 
         if not (thamso.TuoiToiThieu <= calculated_age <= thamso.TuoiToiDa):
             raise serializers.ValidationError(
                 f"Tuổi của học sinh ({calculated_age} tuổi) không nằm trong khoảng quy định "
@@ -81,17 +79,17 @@ class TraCuuHocSinhSerializer(serializers.ModelSerializer):
     bao gồm các trường được tính toán từ view.
     """
     HoTen = serializers.SerializerMethodField(read_only=True)
-    # Các trường này sẽ được cung cấp bởi `annotate` trong view
+    
     TenLop = serializers.CharField(read_only=True, default=None)
     DiemTB_HK1 = serializers.FloatField(read_only=True, default=None)
     DiemTB_HK2 = serializers.FloatField(read_only=True, default=None)
     
-    # Định dạng lại ngày sinh để hiển thị
+    
     NgaySinh = serializers.DateField(format="%d/%m/%Y")
 
     class Meta:
         model = HocSinh
-        # Bổ sung các trường cần thiết
+       
         fields = [
             'id',
             'HoTen',

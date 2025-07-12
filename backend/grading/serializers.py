@@ -39,7 +39,7 @@ class DiemSoSerializer(serializers.ModelSerializer):
             return None
 
 
-# ✅ Serializer mới để trả về danh sách học sinh + điểm (nếu có)
+
 class HocSinhDiemSerializer(serializers.ModelSerializer):
     Diem15 = serializers.SerializerMethodField()
     Diem1Tiet = serializers.SerializerMethodField()

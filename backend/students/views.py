@@ -23,9 +23,7 @@ from classes.models import LopHoc, LopHoc_HocSinh
 class HocSinhListCreateView(generics.ListCreateAPIView):
     queryset = HocSinh.objects.select_related('IDNienKhoaTiepNhan', 'KhoiDuKien').all()
     serializer_class = HocSinhSerializer
-    # THAY ĐỔI: Quyền cho Giáo Vụ (và BGH nếu muốn)
-    # Ví dụ: Nếu chỉ Giáo Vụ: permission_classes = [IsAuthenticated, IsGiaoVu]
-    # Nếu cả BGH và Giáo Vụ:
+   
     permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu] # Hoặc [IsAuthenticated, IsBGH | IsGiaoVu] nếu có IsGiaoVu
 
     filter_backends = [filters.SearchFilter]
@@ -66,21 +64,20 @@ class HocSinhDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
     def perform_destroy(self, instance):
-        # Gọi hàm kiểm tra trước khi xóa
+        
         self._check_student_assigned(instance)
         super().perform_destroy(instance)
 
 
-# Các View để cung cấp danh sách cho dropdown lọc
+
 class NienKhoaFilterListView(generics.ListAPIView):
     queryset = NienKhoa.objects.all().order_by('-TenNienKhoa') # Sắp xếp niên khóa mới nhất lên đầu
     serializer_class = NienKhoaSerializer
-    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu | IsGiaoVien] # Hoặc IsGiaoVu
-
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu | IsGiaoVien] 
 class KhoiFilterListView(generics.ListAPIView):
     queryset = Khoi.objects.all().order_by('TenKhoi') # Sắp xếp khối theo tên
     serializer_class = KhoiSerializer
-    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu] # Hoặc IsGiaoVu
+    permission_classes = [IsAuthenticated, IsBGH | IsGiaoVu] 
 
 
 class TraCuuHocSinhView(generics.ListAPIView):

@@ -11,10 +11,10 @@ import { toast } from 'react-toastify';
 const TraCuuHocSinh = () => {
     const { setPageTitle } = useLayout();
 
-    // State cho bộ lọc
+    
     const [nienKhoaOptions, setNienKhoaOptions] = useState([]);
     const [khoiOptions, setKhoiOptions] = useState([]);
-    const [allLopHocOptions, setAllLopHocOptions] = useState([]); // Lưu tất cả lớp của niên khóa
+    const [allLopHocOptions, setAllLopHocOptions] = useState([]); 
     
     const [selectedNienKhoa, setSelectedNienKhoa] = useState('');
     const [selectedKhoi, setSelectedKhoi] = useState('');
@@ -23,11 +23,10 @@ const TraCuuHocSinh = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    // State cho dữ liệu và trạng thái
+    
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
-    // const [error, setError] = useState(''); // Đã loại bỏ, thay bằng toast
-
+    
     useEffect(() => {
         document.title = "Tra cứu học sinh";
         setPageTitle("Tra cứu học sinh");

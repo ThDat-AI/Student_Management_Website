@@ -27,7 +27,7 @@ def auto_adjust_column_width(ws):
         max_length = 0
         column_letter = None
         for cell in col:
-            if isinstance(cell, Cell):  # Tránh lỗi MergedCell
+            if isinstance(cell, Cell): 
                 if column_letter is None:
                     column_letter = cell.column_letter
                 if cell.value:
@@ -41,7 +41,7 @@ class DiemSoListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # ✅ Lấy IDNienKhoa từ query params, nó có thể có hoặc không
+        # Lấy IDNienKhoa từ query params, nó có thể có hoặc không
         IDNienKhoa = request.query_params.get('IDNienKhoa')
         IDLopHoc = request.query_params.get('IDLopHoc')
         IDMonHoc = request.query_params.get('IDMonHoc')
@@ -50,7 +50,7 @@ class DiemSoListView(APIView):
         if not all([IDLopHoc, IDMonHoc, IDHocKy]):
             return Response({"detail": "Thiếu tham số Lớp học, Môn học hoặc Học kỳ."}, status=400)
         
-        # ✅ Nếu không có IDNienKhoa được cung cấp, tự động lấy niên khóa mới nhất
+        # Nếu không có IDNienKhoa được cung cấp, tự động lấy niên khóa mới nhất
         if not IDNienKhoa:
             latest_nien_khoa = NienKhoa.objects.order_by('-TenNienKhoa').first()
             if not latest_nien_khoa:
@@ -87,7 +87,7 @@ def cap_nhat_diem(request):
         if f not in data:
             return Response({f: 'Trường này bắt buộc'}, status=400)
 
-    # ✅ === LOGIC KIỂM TRA QUYỀN SỬA ĐIỂM ===
+    # === LOGIC KIỂM TRA QUYỀN SỬA ĐIỂM ===
     try:
         lop_hoc = LopHoc.objects.select_related('IDNienKhoa__thamso').get(pk=data['IDLopHoc'])
         thamso = lop_hoc.IDNienKhoa.thamso
@@ -105,8 +105,7 @@ def cap_nhat_diem(request):
     except PermissionDenied as e:
         # Bắt lỗi và trả về cho client
         return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
-    # ✅ === KẾT THÚC LOGIC KIỂM TRA ===
-
+    
 
     diem15 = data.get('Diem15')
     diem1tiet = data.get('Diem1Tiet')
@@ -124,7 +123,7 @@ def cap_nhat_diem(request):
     obj.Diem15 = diem15
     obj.Diem1Tiet = diem1tiet
 
-    # ... (phần còn lại của hàm giữ nguyên)
+    
     if diem15 is not None and diem1tiet is not None:
         try:
             obj.DiemTB = round((float(diem15) + 2 * float(diem1tiet)) / 3, 2)
@@ -137,14 +136,14 @@ def cap_nhat_diem(request):
     return Response(DiemSoSerializer(obj).data, status=status.HTTP_200_OK)
 
 
-# ====== API LẤY DANH SÁCH HỌC KỲ ======
+
 class ListHocKyView(generics.ListAPIView):
     queryset = HocKy.objects.all()
     serializer_class = HocKySerializer
     permission_classes = [IsAuthenticated]
 
 
-# ====== API XUẤT EXCEL BẢNG ĐIỂM ======
+
 class XuatExcelDiemSoAPIView(APIView):
     permission_classes = [IsAuthenticated]
 

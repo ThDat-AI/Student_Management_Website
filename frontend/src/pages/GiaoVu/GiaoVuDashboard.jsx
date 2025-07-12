@@ -51,7 +51,7 @@ const GiaoVuDashboard = () => {
       color: "info", 
       path: "/giaovu/baocao"
     },
-    // ✅ THÊM THẺ CHỨC NĂNG MỚI
+    
     { 
       title: "Quyền sửa điểm", 
       description: "Cho phép hoặc khóa chức năng sửa điểm của giáo viên theo học kỳ.", 

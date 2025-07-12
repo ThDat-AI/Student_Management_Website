@@ -8,12 +8,12 @@ import { toast } from "react-toastify";
 
 import confirmDelete from "../../components/ConfirmDelete";
 
-// --- COMPONENT MODAL (Tạo/Sửa quy định) ---
+
 const QuyDinhModal = ({ show, onHide, mode, selectedQuyDinh, latestQuyDinh, onSubmit }) => {
   const isEditMode = mode === "edit";
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
-  // error state được xóa vì sẽ dùng toast ở component cha
+  
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
@@ -84,7 +84,7 @@ const QuyDinhModal = ({ show, onHide, mode, selectedQuyDinh, latestQuyDinh, onSu
     }
 
     setLoading(true);
-    // Component cha sẽ xử lý việc hiển thị toast
+    
     await onSubmit(formData);
     setLoading(false);
   };
@@ -184,7 +184,7 @@ const QuyDinhModal = ({ show, onHide, mode, selectedQuyDinh, latestQuyDinh, onSu
   );
 };
 
-// --- COMPONENT TABLE HIỂN THỊ ---
+
 const QuyDinhTable = ({ quyDinhs, onEdit, onDelete }) => {
   return (
     <div className="table-responsive">
@@ -237,12 +237,12 @@ const QuyDinhTable = ({ quyDinhs, onEdit, onDelete }) => {
   );
 };
 
-// --- COMPONENT TRANG CHÍNH ---
+
 const QuyDinhManagement = () => {
   const [quyDinhs, setQuyDinhs] = useState([]);
   const [latestQuyDinh, setLatestQuyDinh] = useState(null);
   const [loading, setLoading] = useState(true);
-  // error và success state được xóa
+  
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedQuyDinh, setSelectedQuyDinh] = useState(null);
