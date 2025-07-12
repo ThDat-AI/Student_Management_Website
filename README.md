@@ -1,6 +1,6 @@
-<table border="0">
+<table style="border: none; border-collapse: collapse;">
   <tr>
-    <td style="width: 70%; vertical-align: top;">
+    <td style="width: 70%; vertical-align: top; border: none;">
       <h1>🎓 Student Management System</h1>
       <p>A full-stack web application for managing students, classes, and subjects. Built with:</p>
       <ul>
@@ -9,8 +9,8 @@
         <li><strong>Database:</strong> SQL Server</li>
       </ul>
     </td>
-    <td style="width: 30%;">
-      <img src="https://github.com/ThDat-AI/Student_Management_Website/blob/main/frontend/src/assets/logo.jpg?raw=true" width="200" alt="Project Login Preview" />
+    <td style="width: 30%; border: none;">
+      <img src="https://github.com/ThDat-AI/Student_Management_Website/blob/main/frontend/src/assets/logo.jpg?raw=true" width="220" style="border-radius: 8px;" alt="Login Preview" />
     </td>
   </tr>
 </table>
