@@ -1,4 +1,3 @@
-# 🎓 Student Management System
 <table>
   <tr>
     <td style="width: 70%; vertical-align: top;">
@@ -15,12 +14,6 @@
     </td>
   </tr>
 </table>
-A full-stack web application for managing students, classes, and subjects. 
-Built with:
-
-- **Frontend:** React + Vite + Bootstrap
-- **Backend:** Django + Django REST Framework
-- **Database:** SQL Server
 ---
 📺 **YOUTUBE**: _https://www.youtube.com/watch?v=tbDOXz05g8w_
 
