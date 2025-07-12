@@ -19,32 +19,32 @@ GROUP 24 - LECTOR: Nguyen Thi Xuan Huong
 |    Võ Khải Duy             | 23520397    | Member |
 ---
 
-
+```
 ## 📂 Folder Structure
-```STUDENT_MANAGEMENT_WEBSITE/
+STUDENT_MANAGEMENT_WEBSITE/
 ├── backend/ # Django backend
 ├── frontend/ # React + Vite frontend
 ├── SQL/ # SQL scripts for database
 └── README.md 
 ```
 ---
-
-```## ⚙️ Backend Setup (Django)
+```
+## ⚙️ Backend Setup (Django)
 cd backend
 python manage.py migrate
 python manage.py runserver
 ```
 
 ---
-
-```## ⚙️ Frontend Setup (React + Vite)
+```
+## ⚙️ Frontend Setup (React + Vite)
 cd frontend
 npm install
 npm run dev
 ```
 ---
-
-```## 🌐 Deployment
+```
+## 🌐 Deployment
 Backend: Render
 Frontend: Vercel
 ```
