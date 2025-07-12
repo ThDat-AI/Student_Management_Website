@@ -9,12 +9,12 @@ A full-stack web application for managing students, classes, and subjects. Built
 ---
 
 ## 📂 Folder Structure
-STUDENT_MANAGEMENT_WEBSITE/
+```STUDENT_MANAGEMENT_WEBSITE/
 ├── backend/ # Django backend
 ├── frontend/ # React + Vite frontend
 ├── SQL/ # SQL scripts for database
 └── README.md 
-
+```
 ---
 
 ## ⚙️ Backend Setup (Django)
