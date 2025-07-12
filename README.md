@@ -1,4 +1,4 @@
-<table>
+<table border="0">
   <tr>
     <td style="width: 70%; vertical-align: top;">
       <h1>🎓 Student Management System</h1>
@@ -15,6 +15,7 @@
   </tr>
 </table>
 ---
+
 📺 **YOUTUBE**: _https://www.youtube.com/watch?v=tbDOXz05g8w_
 
 🌐 **LINK WEB**: _https://stumag.vercel.app/login_
