@@ -20,8 +20,6 @@
 
 🌐 **LINK WEB**: _https://stumag.vercel.app/login_
 
-📬 **CONTACT**: _https://www.facebook.com/Hi0367_
-
 ---
 ## 👥 Project Members
 **GROUP 24** — **LECTURER**: *Nguyen Thi Xuan Huong*
