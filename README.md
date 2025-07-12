@@ -32,7 +32,7 @@ STUDENT_MANAGEMENT_WEBSITE/
 ├── frontend/ # React + Vite frontend
 ├── SQL/ # SQL scripts for database
 └── README.md 
----
+
 
 ⚙️ Backend Setup (Django)
 
