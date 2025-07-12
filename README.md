@@ -26,7 +26,7 @@ Built with:
 
 
  📂 **Folder Structure**
-
+```
 STUDENT_MANAGEMENT_WEBSITE/
 ├── backend/ # Django backend
 ├── frontend/ # React + Vite frontend
