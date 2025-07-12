@@ -1,5 +1,7 @@
 # 🎓 Student Management System
-
+<p align="center">
+  <img src="https://github.com/ThDat-AI/Student_Management_Website/blob/main/frontend/src/assets/logo.jpg?raw=true" width="250" alt="Student Management System Logo" />
+</p>
 A full-stack web application for managing students, classes, and subjects. 
 Built with:
 
