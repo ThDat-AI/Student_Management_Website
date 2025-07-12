@@ -33,25 +33,26 @@ STUDENT_MANAGEMENT_WEBSITE/
 ├── SQL/ # SQL scripts for database
 └── README.md 
 
+```
+⚙️ **Backend Setup (Django)**
 
-⚙️ Backend Setup (Django)
-
-```bash
+```
 cd backend
 python manage.py migrate
 python manage.py runserver
 
----
 
+```
 ⚙️ Frontend Setup (React + Vite)
-```bash
+```
 cd frontend
 npm install
 npm run dev
-
----
 ```
+
+
 🌐 Deployment
+```
 Backend: Railway
 Frontend: Vercel
 ```
