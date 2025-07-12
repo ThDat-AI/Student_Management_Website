@@ -45,7 +45,7 @@ npm run dev
 ---
 ```
 ## 🌐 Deployment
-Backend: Render
+Backend: Railway
 Frontend: Vercel
 ```
 
