@@ -39,7 +39,6 @@ STUDENT_MANAGEMENT_WEBSITE/
 ├── frontend/ # React + Vite frontend
 ├── SQL/ # SQL scripts for database
 └── README.md 
----
 ```
 ⚙️ **Backend Setup (Django)**
 
@@ -47,8 +46,6 @@ STUDENT_MANAGEMENT_WEBSITE/
 cd backend
 python manage.py migrate
 python manage.py runserver
-
-
 ```
 ⚙️ **Frontend Setup (React + Vite)**
 ```
