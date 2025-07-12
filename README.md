@@ -7,6 +7,18 @@ A full-stack web application for managing students, classes, and subjects. Built
 - **Database:** SQL Server
 
 ---
+---
+
+## 👥 Project Members
+GROUP 24 - LECTOR: Nguyen Thi Xuan Huong
+| Họ và Tên       | MSSV      | Vai Trò         |
+|------------------|-----------|-----------------|
+|    Lê Thành Thắng Đạt      | 23520251    | Leader |
+|    Nguyễn Phùng Gia Đạt    | 23520259    | Member |
+|    Trần Lê Gia Bảo         | 23520142    | Member |
+|    Võ Khải Duy             | 23520397    | Member |
+---
+
 
 ## 📂 Folder Structure
 ```STUDENT_MANAGEMENT_WEBSITE/
@@ -17,22 +29,23 @@ A full-stack web application for managing students, classes, and subjects. Built
 ```
 ---
 
-## ⚙️ Backend Setup (Django)
+```## ⚙️ Backend Setup (Django)
 cd backend
 python manage.py migrate
 python manage.py runserver
+```
 
 ---
 
-## ⚙️ Frontend Setup (React + Vite)
+```## ⚙️ Frontend Setup (React + Vite)
 cd frontend
 npm install
 npm run dev
-
+```
 ---
 
-## 🌐 Deployment
+```## 🌐 Deployment
 Backend: Render
 Frontend: Vercel
-
+```
 
