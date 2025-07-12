@@ -28,7 +28,7 @@ GROUP 24 - LECTURER : Nguyen Thi Xuan Huong
 |    Võ Khải Duy             | 23520397    | Member |
 ---
 
-```
+
  📂 **Folder Structure**
 ```
 STUDENT_MANAGEMENT_WEBSITE/
