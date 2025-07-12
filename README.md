@@ -5,7 +5,10 @@ A full-stack web application for managing students, classes, and subjects. Built
 - **Frontend:** React + Vite + Bootstrap
 - **Backend:** Django + Django REST Framework
 - **Database:** SQL Server
-
+  
+📺 **YOUTUBE**: _https://www.youtube.com/watch?v=tbDOXz05g8w_
+🌐 **LINK WEB**: _https://stumag.vercel.app/login_
+📬 **CONTACT**: _https://www.facebook.com/Hi0367_
 ---
 ---
 
@@ -20,7 +23,7 @@ GROUP 24 - LECTURER : Nguyen Thi Xuan Huong
 ---
 
 ```
-## 📂 Folder Structure
+## 📂 **Folder Structure**
 STUDENT_MANAGEMENT_WEBSITE/
 ├── backend/ # Django backend
 ├── frontend/ # React + Vite frontend
@@ -29,7 +32,7 @@ STUDENT_MANAGEMENT_WEBSITE/
 ```
 ---
 ```
-## ⚙️ Backend Setup (Django)
+## ⚙️** Backend Setup (Django)**
 cd backend
 python manage.py migrate
 python manage.py runserver
@@ -37,14 +40,14 @@ python manage.py runserver
 
 ---
 ```
-## ⚙️ Frontend Setup (React + Vite)
+## ⚙️ **Frontend Setup (React + Vite)**
 cd frontend
 npm install
 npm run dev
 ```
 ---
 ```
-## 🌐 Deployment
+## 🌐 **Deployment**
 Backend: Railway
 Frontend: Vercel
 ```
