@@ -13,7 +13,7 @@ Built with:
 
 📬 **CONTACT**: _https://www.facebook.com/Hi0367_
 
-
+---
 ## 👥 Project Members
 **GROUP 24** — **LECTURER**: *Nguyen Thi Xuan Huong*
 | Họ và Tên               | MSSV      | Vai Trò |
@@ -32,7 +32,7 @@ STUDENT_MANAGEMENT_WEBSITE/
 ├── frontend/ # React + Vite frontend
 ├── SQL/ # SQL scripts for database
 └── README.md 
-
+---
 ```
 ⚙️ **Backend Setup (Django)**
 
