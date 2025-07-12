@@ -1,7 +1,20 @@
 # 🎓 Student Management System
-<p align="center">
-  <img src="https://github.com/ThDat-AI/Student_Management_Website/blob/main/frontend/src/assets/logo.jpg?raw=true" width="250" alt="Student Management System Logo" />
-</p>
+<table>
+  <tr>
+    <td style="width: 70%; vertical-align: top;">
+      <h1>🎓 Student Management System</h1>
+      <p>A full-stack web application for managing students, classes, and subjects. Built with:</p>
+      <ul>
+        <li><strong>Frontend:</strong> React + Vite + Bootstrap</li>
+        <li><strong>Backend:</strong> Django + Django REST Framework</li>
+        <li><strong>Database:</strong> SQL Server</li>
+      </ul>
+    </td>
+    <td style="width: 30%;">
+      <img src="https://github.com/ThDat-AI/Student_Management_Website/blob/main/frontend/src/assets/logo.jpg?raw=true" width="200" alt="Project Login Preview" />
+    </td>
+  </tr>
+</table>
 A full-stack web application for managing students, classes, and subjects. 
 Built with:
 
